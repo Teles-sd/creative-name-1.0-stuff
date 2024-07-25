@@ -35,51 +35,9 @@ public class PlayerController : MonoBehaviour {
     public Vector3 footBoxSize;
     
     
-    
-    [Space(10)]
-    [Header("# Context Menu Commands")]
-    
-//     [ContextMenuItem("Set Current Position", "setCurrentPosition")]
-//     [Tooltip("Set the player position to this element of the `playerPositions` list below.")]
-//     public int goToElement = 0;
-//     [ContextMenuItem("Reset playerPositions", "playerPositionsResetter")]
-//     public List<Vector3> playerPositions;
-    
-    [ContextMenuItem("Set Current Position", "setCurrentPosition")]
-    public playerPositionsNames goToPosition;
-    
-    [ContextMenuItem("Reset playerPositions", "playerPositionsResetter")]
-    public playerPositionsVectors positionsVectors;
-    
-    public enum playerPositionsNames{
-        Spawn,
-        Hub,
-        Well,
-    };
-    
-    [System.Serializable]
-    public class playerPositionsVectors {
-        
-        public Vector3 Spawn;
-        public Vector3 Hub;
-        public Vector3 Well;
-        
-        public Vector3 this[playerPositionsNames _name]{
-            get{
-                return (Vector3)typeof(playerPositionsVectors).GetField( _name.ToString() ).GetValue(this);
-            }
-        }
-        
-        public T GetAttribute<T> ( string _name ) {
-            return (T)typeof(playerPositionsVectors).GetField( _name ).GetValue(this);
-        }
-    }
-    
-    
     [Space(10)]
     [Header("# Tests & Debug stuff")]
     
-    [ContextMenuItem("Do Test Stuff", "runSumTest")]
     public bool doTestStuff = false;
     public bool activateGizmos = false;
 
@@ -95,53 +53,6 @@ public class PlayerController : MonoBehaviour {
     // private void footBoxSizeResetter(){ footBoxSize = new Vector3(1,0.2f,1); }
     private void footBoxSizeResetter(){ footBoxSize = new Vector3(0.707f,0.15f,0.707f); }
     // private void footBoxSizeResetter(){ footBoxSize = new Vector3(0.85f,0.15f,0.85f); }
-
-    
-    
-    // CONTEXT MENU COMMANDS
-    
-    private void setCurrentPosition(){
-        
-        print("\nTp to " + positionsVectors[goToPosition].ToString() );
-        
-        // print("\nTp to " + positionsVectors.GetAttribute<Vector3> ( goToPosition.ToString() ).ToString() );
-        
-        transform.position = positionsVectors[goToPosition];
-    }
-    
-    private void playerPositionsResetter(){
-        positionsVectors.Spawn = new Vector3(7,3,7);
-        positionsVectors.Hub = new Vector3(44,15,71);
-        positionsVectors.Well = new Vector3(62.5f,11,17);
-    }
-    
-//     private void setCurrentPosition(){
-//         
-//         if (0 <= goToElement && goToElement < playerPositions.Count){
-//             transform.position = playerPositions[goToElement];
-//             print("\nTp to " + playerPositions[goToElement].ToString() );
-//         }else{
-//             print(
-//                 "This index (" + goToElement.ToString() + ") is not valid.\n" +
-//                 "Max index : " + (playerPositions.Count - 1).ToString() + "."
-//             );
-//         }
-//     }
-    
-    
-    
-    
-    // private void playerPositionsResetter(){
-    //     playerPositions = new List<Vector3> {
-    //         new Vector3(7,3,7),
-    //         new Vector3(44,15,71),
-    //         new Vector3(62.5f,11,17),
-    //     };
-    // }
-
-    private void runSumTest(){
-        
-    }
     
     
     
