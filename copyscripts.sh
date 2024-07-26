@@ -22,3 +22,4 @@ cp -uv  "$FROM_UNITY_SCRIPTS"/"GameController.cs"                   "$TO_STUFF"/
 cp -uv  "$FROM_UNITY_SCRIPTS"/"LevelChanger.cs"                     "$TO_STUFF"/"Scripts bckp"
 cp -uv  "$FROM_UNITY_SCRIPTS"/"PlayerController.cs"                 "$TO_STUFF"/"Scripts bckp"
 cp -uv  "$FROM_UNITY_SCRIPTS"/"TerrainHeightResolutionFixer.cs"     "$TO_STUFF"/"Scripts bckp"
+cp -uv  "$FROM_UNITY_SCRIPTS"/"UIController.cs"                     "$TO_STUFF"/"Scripts bckp"
