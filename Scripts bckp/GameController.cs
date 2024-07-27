@@ -33,6 +33,14 @@ public class GameController : MonoBehaviour {
     
     // PUBLIC VARIABLES
     
+    [Header("# All Scene References")]
+    
+    public SceneReference hubSceneRef;
+    public SceneReference phase1SceneRef;
+    public SceneReference testingGroundsSceneRef;
+    
+    
+    [Space(10)]
     [Header("# Context Menu Commands")]
     
     public Transform playerTransform;
@@ -47,6 +55,7 @@ public class GameController : MonoBehaviour {
     [Space(10)]
     [Header("# Tests & Debug stuff")]
     
+    [ContextMenuItem("doTestStuff Function", "doTestStufffunc")]
     public bool doTestStuff = false;
 
     // [Space(10)]
@@ -68,6 +77,12 @@ public class GameController : MonoBehaviour {
         positionsVectors.Well = new Vector3(62.5f,11,17);
     }
     
+    private void doTestStufffunc(){
+        print(hubSceneRef);
+        print("a:" + hubSceneRef);
+        print(hubSceneRef.ScenePath);
+    }
+    
     
     
     // PRIVATE VARIABLES
@@ -77,13 +92,14 @@ public class GameController : MonoBehaviour {
     
     private Scene thisScene;
     
+    // Singleton
+    private static GameController instance;
+    // Use the static modifier to declare a static member, which belongs to the type itself rather than to a specific object.
+    // While an instance of a class contains a separate copy of all instance fields of the class, there's only one copy of each static field.
+    
     
     
     // FUNCTIONS
-    
-    // Use the static modifier to declare a static member, which belongs to the type itself rather than to a specific object.
-    // While an instance of a class contains a separate copy of all instance fields of the class, there's only one copy of each static field.
-    private static GameController instance;
     
     // Called first upon initialisation of an object
     private void Awake() {
@@ -115,7 +131,7 @@ public class GameController : MonoBehaviour {
     
     public void ChangeLevel(string sceneName) {
         
-        print("GameController changing level");
+        print("GameController changing level to " + sceneName);
         // Make player not movable
         // UI fade in
         // UI Loading Screen On
@@ -128,16 +144,17 @@ public class GameController : MonoBehaviour {
         
         AsyncOperation loadingAsyncOp = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single);
         
-        while( !loadingAsyncOp.isDone ){
+        do{
             uiControllerScript.UpdateProgressBar(loadingAsyncOp.progress);
             yield return null;
-        }
+        } while( !loadingAsyncOp.isDone );
         
         // wait time
         // yield return new WaitForSeconds(waitTime);
         yield return new WaitForSeconds(0.5f);
         
         // UI fade out
+        // Set Player location
         // UI Loading Screen Off
         uiControllerScript.ShowLoadingScreen(false);
         // Am Alive

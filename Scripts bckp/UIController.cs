@@ -19,11 +19,16 @@ public class UIController : MonoBehaviour {
     
     
     
-    // FUNCTIONS
+    // PRIVATE VARIABLES
     
+    // Singleton
+    private static UIController instance;
     // Use the static modifier to declare a static member, which belongs to the type itself rather than to a specific object.
     // While an instance of a class contains a separate copy of all instance fields of the class, there's only one copy of each static field.
-    private static UIController instance;
+    
+    
+    
+    // FUNCTIONS
     
     // Called first upon initialisation of an object
     private void Awake() {

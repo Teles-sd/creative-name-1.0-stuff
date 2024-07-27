@@ -44,6 +44,12 @@ public class PlayerController : MonoBehaviour {
     [Space(10)]
     public bool writeToDebugText = false;
     public TextMeshProUGUI debugTextObject;
+    
+    
+    
+    // GETTERS
+    
+    public Vector2 getMouseInput(){ return mouseInput; }
 
     
     
@@ -84,10 +90,10 @@ public class PlayerController : MonoBehaviour {
     private bool jumpGlide = false;
     private float glideTime = 0f;
     
-    
-    // GETTERS
-    
-    public Vector2 getMouseInput(){ return mouseInput; }
+    // Singleton
+    private static PlayerController instance;
+    // Use the static modifier to declare a static member, which belongs to the type itself rather than to a specific object.
+    // While an instance of a class contains a separate copy of all instance fields of the class, there's only one copy of each static field.
     
     
     
@@ -95,6 +101,12 @@ public class PlayerController : MonoBehaviour {
     
     // Called first upon initialisation of an object
     private void Awake() {
+        if(instance){
+            Destroy(gameObject);
+        } else {
+            instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
         
         playerRigidbody = GetComponent<Rigidbody>();
         playerTransform = GetComponent<Transform>();

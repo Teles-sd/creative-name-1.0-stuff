@@ -1,18 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-// using UnityEngine.SceneManagement;
-// using UnityEngine.Events;
 
 public class LevelChanger : MonoBehaviour {
     
 
     // PUBLIC VARIABLES
     
-    // public Scene goToLevel;
-    public string sceneName;
-    
-    // public UnityEvent changeLevel;
+    public SceneReference goToLevel;
     
     
     // PRIVATE VARIABLES
@@ -34,9 +29,8 @@ public class LevelChanger : MonoBehaviour {
     private void OnTriggerEnter (Collider other) {
         if (other == playerBodyCollider){
             
-            print("Level Changer trigger");
-            // changeLevel.Invoke();
-            gameControllerScript.ChangeLevel(sceneName);
+            // print("Level Changer trigger");
+            gameControllerScript.ChangeLevel(goToLevel);
         }
     }
 }
