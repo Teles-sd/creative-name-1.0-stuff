@@ -5,42 +5,20 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 
-    
-public enum PlayerPositionsNames{
-    Spawn,
-    Hub,
-    Well,
-};
-
-[System.Serializable]
-public class PlayerPositionsVectors {
-    
-    public Vector3 Spawn;
-    public Vector3 Hub;
-    public Vector3 Well;
-    
-    public Vector3 this[PlayerPositionsNames _name]{
-        get{
-            return (Vector3)typeof(PlayerPositionsVectors).GetField( _name.ToString() ).GetValue(this);
-        }
-    }
-}
-
-
 
 public class GameController : MonoBehaviour {
     
     
     // PUBLIC VARIABLES
     
-    [Header("# All Scene References")]
-    
-    public SceneReference hubSceneRef;
-    public SceneReference phase1SceneRef;
-    public SceneReference testingGroundsSceneRef;
-    
-    
-    [Space(10)]
+//     [Header("# All Scene References")]
+//     
+//     public SceneReference hubSceneRef;
+//     public SceneReference phase1SceneRef;
+//     public SceneReference testingGroundsSceneRef;
+//     
+//     
+//     [Space(10)]
     [Header("# Context Menu Commands")]
     
     public Transform playerTransform;
@@ -78,10 +56,16 @@ public class GameController : MonoBehaviour {
     }
     
     private void doTestStufffunc(){
-        print(hubSceneRef);
-        print("a:" + hubSceneRef);
-        print(hubSceneRef.ScenePath);
+        // print(hubSceneRef);
+        // print("a:" + hubSceneRef);
+        // print(hubSceneRef.ScenePath);
     }
+    
+    
+    
+    // GETTERS
+    
+    public bool IsChangingLevel{ get{return isChangingLevel;} }
     
     
     
@@ -89,8 +73,11 @@ public class GameController : MonoBehaviour {
     
     // private Transform playerTransform;
     private UIController uiControllerScript;
+    private SceneOnLoadData solDataScript;
     
-    private Scene thisScene;
+    private string previousSceneName;
+    private string currentSceneName;
+    private bool isChangingLevel = false;    
     
     // Singleton
     private static GameController instance;
@@ -113,35 +100,33 @@ public class GameController : MonoBehaviour {
     
     // Start is called before the first frame update
     private void Start() {
-        if ( !playerTransform ){
-            playerTransform = GameObject.FindWithTag("Player").transform;
-        }
+        
+        playerTransform = GameObject.FindWithTag("Player").transform;
         
         uiControllerScript = GameObject.FindWithTag("UIController").GetComponent<UIController>();
+        solDataScript = FindAnyObjectByType<SceneOnLoadData>();
         
-        amAlive();
-    }
-    
-    private void amAlive(){
-        if (doTestStuff){
-            thisScene = SceneManager.GetActiveScene();
-            print("Imma live now on '" + thisScene.name + "' Scene.");
-        }
+        currentSceneName = SceneManager.GetActiveScene().name;
+        isChangingLevel = false;
     }
     
     public void ChangeLevel(string sceneName) {
         
-        print("GameController changing level to " + sceneName);
+        // Update isChangingLevel
+        isChangingLevel = true;
+        
         // Make player not movable
         // UI fade in
         // UI Loading Screen On
         uiControllerScript.ShowLoadingScreen(true);
+        
         // Load Scene
         StartCoroutine( LoadingScene(sceneName) );
     }
     
     private IEnumerator LoadingScene(string sceneName) {
         
+        previousSceneName = currentSceneName;
         AsyncOperation loadingAsyncOp = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single);
         
         do{
@@ -149,18 +134,23 @@ public class GameController : MonoBehaviour {
             yield return null;
         } while( !loadingAsyncOp.isDone );
         
+        currentSceneName = SceneManager.GetActiveScene().name;
+        solDataScript = FindAnyObjectByType<SceneOnLoadData>();
+        
         // wait time
-        // yield return new WaitForSeconds(waitTime);
         yield return new WaitForSeconds(0.5f);
         
-        // UI fade out
         // Set Player location
+        playerTransform.position = solDataScript.SpawnPositionFromScene(previousSceneName);
+        
+        // UI fade out
         // UI Loading Screen Off
         uiControllerScript.ShowLoadingScreen(false);
-        // Am Alive
-        amAlive();
+        
         // Make player movable
         // Print loaded Scenes
+        // Update isChangingLevel
+        isChangingLevel = false;
     }
     
     public void ExitGame() {
