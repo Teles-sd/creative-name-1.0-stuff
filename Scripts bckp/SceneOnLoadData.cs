@@ -26,9 +26,9 @@ public class PlayerPositionsVectors {
 
 [System.Serializable]
 public class SpawnPoint {
-    public string name;
-    public Vector3 position;
+    [HideInInspector] public string name;
     public string fromSceneName;
+    public Vector3 position;
 }
 
 
@@ -64,6 +64,14 @@ public class SceneOnLoadData : MonoBehaviour {
             Destroy(gameObject);
         } else {
             instance = this;
+        }
+    }
+    
+    private void OnValidate(){
+        foreach (var sp in spawnPoints){
+            if ( !string.IsNullOrEmpty(sp.fromSceneName) ){
+                sp.name = "from \"" + sp.fromSceneName + "\"";
+            }
         }
     }
     
