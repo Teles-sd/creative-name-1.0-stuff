@@ -116,39 +116,42 @@ public class GameController : MonoBehaviour {
         isChangingLevel = true;
         
         // Make player not movable
-        // UI fade in
-        // UI Loading Screen On
-        uiControllerScript.ShowLoadingScreen(true);
-        
-        // Load Scene
-        StartCoroutine( LoadingScene(sceneName) );
+        // Load Sequence
+        StartCoroutine( LoadingSequence(sceneName) );
     }
     
-    private IEnumerator LoadingScene(string sceneName) {
+    private IEnumerator LoadingSequence(string sceneName) {
         
+        // UI Loading Screen On
+        uiControllerScript.ActivateLoadScreen(true);
+        uiControllerScript.FadeLoadScreen(true);
+        yield return new WaitForSeconds(0.5f);
+        
+        // Load Scene
         previousSceneName = currentSceneName;
         AsyncOperation loadingAsyncOp = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single);
         
+        float smoothProgress = 0f;
         do{
-            uiControllerScript.UpdateProgressBar(loadingAsyncOp.progress);
+            // uiControllerScript.UpdateProgressBar(loadingAsyncOp.progress);
+            smoothProgress = Mathf.MoveTowards(smoothProgress, loadingAsyncOp.progress, 0.1f);
+            uiControllerScript.UpdateProgressBar(smoothProgress);
             yield return null;
-        } while( !loadingAsyncOp.isDone );
+        // } while( !loadingAsyncOp.isDone );
+        } while( smoothProgress < 1 );
         
         currentSceneName = SceneManager.GetActiveScene().name;
         solDataScript = FindAnyObjectByType<SceneOnLoadData>();
         
-        // wait time
-        yield return new WaitForSeconds(0.5f);
-        
         // Set Player location
         playerTransform.position = solDataScript.SpawnPositionFromScene(previousSceneName);
         
-        // UI fade out
         // UI Loading Screen Off
-        uiControllerScript.ShowLoadingScreen(false);
+        uiControllerScript.FadeLoadScreen(false);
+        yield return new WaitForSeconds(0.5f);
+        uiControllerScript.ActivateLoadScreen(false);
         
         // Make player movable
-        // Print loaded Scenes
         // Update isChangingLevel
         isChangingLevel = false;
     }

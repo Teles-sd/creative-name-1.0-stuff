@@ -10,7 +10,7 @@ public class UIController : MonoBehaviour {
     // PUBLIC VARIABLES
     
     [Header("# Loading Screen")]
-    public GameObject loadingScreenPanel;
+    public GameObject loadScreenPanel;
     public Image progressBarImage;
     
     [Space(10)]
@@ -20,6 +20,8 @@ public class UIController : MonoBehaviour {
     
     
     // PRIVATE VARIABLES
+    
+    private Animator loadScreenAnimator;
     
     // Singleton
     private static UIController instance;
@@ -42,17 +44,22 @@ public class UIController : MonoBehaviour {
     
     // Start is called before the first frame update
     private void Start() {
-        loadingScreenPanel.SetActive(false);
+        loadScreenPanel.SetActive(false);
+        loadScreenPanel.GetComponent<Image>().fillAmount = 0f;
+        
+        loadScreenAnimator = loadScreenPanel.GetComponent<Animator>();
     }
     
-    public void ShowLoadingScreen(bool show){
-        if (show){
-            loadingScreenPanel.SetActive(true);
-        } else {
-            loadingScreenPanel.SetActive(false);
+    public void ActivateLoadScreen(bool active){
+        loadScreenPanel.SetActive(active);
+        if (!active){
             // Reset Load Screen
             UpdateProgressBar(0f);
         }
+    }
+    
+    public void FadeLoadScreen(bool fade){
+        loadScreenAnimator.SetBool("loading", fade);
     }
     
     public void UpdateProgressBar(float value){
