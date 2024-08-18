@@ -16,7 +16,7 @@ public class PlayerController : MonoBehaviour {
     
     [Space(10)]
     [Range(3, 13)] public int jumpForce = 7;
-    [Range(0f, 1f)] public float maxGlideTime = 0.75f;
+    [Range(0f, 1f)] public float jumpGlideMaxTime = 0.75f;
     [Range(1f, 5f)] public float gravityScale = 2f;
     
     [Space(10)]
@@ -33,6 +33,10 @@ public class PlayerController : MonoBehaviour {
         "but not reflected on Gizmos if Player scale is changed)."
     )]
     public Vector3 footBoxSize;
+    
+    [Space(10)]
+    [Range(1.5f, 5f)] public float dashSpeedMultplier = 3f;
+    [Range(0f, 1f)] public float dashTotalTime = 0.5f;
     
     
     [Space(10)]
@@ -75,10 +79,12 @@ public class PlayerController : MonoBehaviour {
     private bool isMovable;
     private bool cursorLocked;
     
-    private Vector3 inputVelocity;
-    private float facingAngle;
-    private Vector3 horizontalVelocity;
     private Vector3 prbVelocity;
+    
+    // private Vector3 inputVelocity;
+    private float facingAngle;
+    private Vector3 inputDirection;
+    private Vector3 horizontalVelocity;
     
     private Collider[] footColliders;
     private LayerMask footLayerMask = -1; // everything
@@ -89,6 +95,16 @@ public class PlayerController : MonoBehaviour {
     private bool jumpHoldn = false;
     private bool jumpGlide = false;
     private float glideTime = 0f;
+    
+    // private bool hasDash = false;
+    public bool hasDash = false;
+    private bool dashAllow = false;
+    private bool dashSeqnc = false;
+    // private Vector3 dashDirection;
+    public Vector3 dashDirection;
+    // private float dashSpeed = 0f;
+    public float dashSpeed = 0f;
+    private float dashTimer = 0f;
     
     // Singleton
     private static PlayerController instance;
@@ -121,6 +137,9 @@ public class PlayerController : MonoBehaviour {
         jumpStart = false;
         jumpHoldn = false;
         jumpGlide = false;
+        
+        facingAngle = playerTransform.rotation.eulerAngles.y;
+        dashDirection = Quaternion.AngleAxis(facingAngle, Vector3.up) * Vector3.forward;
         
         if (footBoxCenter == Vector3.zero){
             footBoxCenterResetter();
@@ -208,10 +227,28 @@ public class PlayerController : MonoBehaviour {
                 // still holding after jump hit apex
                 if (jumpGlide){
                     
-                    if ( !Input.GetButton("Jump") || glideTime > maxGlideTime){
+                    if ( !Input.GetButton("Jump") || glideTime > jumpGlideMaxTime){
                         jumpGlide = false;
                     }
                 }
+            }
+            
+            
+            
+            // DASH
+            
+            if (!dashSeqnc && inputDirection != Vector3.zero){
+                dashDirection = inputDirection;
+            }
+            
+            if ( Input.GetKeyDown(KeyCode.Mouse0) && dashAllow){
+                dashSeqnc = true;
+                dashAllow = false;
+                dashTimer = 0f;
+            }
+            
+            if (hasDash && !dashSeqnc && isFooted){
+                dashAllow = true;
             }
             
             
@@ -340,13 +377,35 @@ public class PlayerController : MonoBehaviour {
     // Frame-rate independent for physics calculations.
     private void FixedUpdate() {
         
-        // MOVEMENT
-        
+        // variable used to store values for movement, jump and dash
         prbVelocity = playerRigidbody.velocity;
         
-        inputVelocity = movementInput.normalized * movementSpeed;
         
-        horizontalVelocity = Quaternion.AngleAxis(facingAngle, Vector3.up) * inputVelocity;
+        
+        // MOVEMENT (and DASH)
+        
+//         inputVelocity = movementInput.normalized * movementSpeed;
+//         
+//         horizontalVelocity = Quaternion.AngleAxis(facingAngle, Vector3.up) * inputVelocity;
+        
+        inputDirection = Quaternion.AngleAxis(facingAngle, Vector3.up) * movementInput;
+        
+        if (!dashSeqnc){
+            horizontalVelocity =  inputDirection.normalized * movementSpeed;
+        } else {
+        
+            // DASH
+            
+            dashSpeed = Mathf.Lerp(movementSpeed * dashSpeedMultplier, movementSpeed, dashTimer/dashTotalTime);
+            
+            horizontalVelocity =  dashDirection.normalized * dashSpeed;
+            
+            dashTimer += Time.fixedDeltaTime;
+            
+            if (dashTimer >= dashTotalTime){
+                dashSeqnc = false;
+            }
+        }
         
         prbVelocity.x = horizontalVelocity.x;
         prbVelocity.z = horizontalVelocity.z;
@@ -376,7 +435,6 @@ public class PlayerController : MonoBehaviour {
         
         // extra gravity for snappy jump
         if ( !jumpSeqnc ){
-            // prbVelocity.y += Physics.gravity.y * (gravityScale - 1) * Time.fixedDeltaTime;
             playerRigidbody.AddForce(Physics.gravity * (gravityScale - 1), ForceMode.Acceleration);
         }
 
