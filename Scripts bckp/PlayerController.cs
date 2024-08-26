@@ -18,6 +18,7 @@ public class PlayerController : MonoBehaviour {
     [Range(3, 13)] public int jumpForce = 7;
     [Range(0f, 1f)] public float jumpGlideMaxTime = 0.75f;
     [Range(1f, 5f)] public float gravityScale = 2f;
+    [Range(0.1f, .5f)] public float coyoteTime = 0.25f;
     
     [Space(10)]
     [ContextMenuItem("Reset footBoxCenter", "footBoxCenterResetter")]
@@ -90,20 +91,24 @@ public class PlayerController : MonoBehaviour {
     private LayerMask footLayerMask = -1; // everything
     
     private bool isFooted = false;
+    private bool coyoteJumpAllow = false;
+    private float coyoteTimeCounter = 0f;
+    
     private bool jumpSeqnc = false;
     private bool jumpStart = false;
     private bool jumpHoldn = false;
     private bool jumpGlide = false;
     private float glideTime = 0f;
     
+    
     // private bool hasDash = false;
-    public bool hasDash = false;
+    [Space(10)] public bool hasDash = false;
     private bool dashAllow = false;
     private bool dashSeqnc = false;
-    // private Vector3 dashDirection;
-    public Vector3 dashDirection;
-    // private float dashSpeed = 0f;
-    public float dashSpeed = 0f;
+    private Vector3 dashDirection;
+    // public Vector3 dashDirection;
+    private float dashSpeed = 0f;
+    // public float dashSpeed = 0f;
     private float dashTimer = 0f;
     
     // Singleton
@@ -198,11 +203,26 @@ public class PlayerController : MonoBehaviour {
             foreach (var fc in footColliders){
                 if ( fc != playerBodyCollider ){
                     isFooted = true;
+                    break;
                 }
             }
             
+            if (!coyoteJumpAllow && isFooted){
+                coyoteJumpAllow = true;
+                coyoteTimeCounter = 0f;
+            }
+            
+            if (coyoteJumpAllow && !isFooted){
+                coyoteTimeCounter += Time.deltaTime;
+            }
+            
+            if (coyoteTimeCounter >= coyoteTime){
+                coyoteJumpAllow = false;
+            }
+            
             // conditions to initiate jump sequence
-            if (Input.GetButtonDown("Jump") && isFooted && !jumpSeqnc){
+            if (Input.GetButtonDown("Jump") && coyoteJumpAllow && !jumpSeqnc){
+            // if (Input.GetButtonDown("Jump") && isFooted && !jumpSeqnc){
                 jumpSeqnc = true;
                 jumpStart = true;
                 jumpHoldn = true;
@@ -241,13 +261,13 @@ public class PlayerController : MonoBehaviour {
                 dashDirection = inputDirection;
             }
             
-            if ( Input.GetKeyDown(KeyCode.Mouse0) && dashAllow){
+            if ( Input.GetKeyDown(KeyCode.Mouse0) && dashAllow && cursorLocked){
                 dashSeqnc = true;
                 dashAllow = false;
                 dashTimer = 0f;
             }
             
-            if (hasDash && !dashSeqnc && isFooted){
+            if (!dashAllow && hasDash && !dashSeqnc && isFooted){
                 dashAllow = true;
             }
             
@@ -255,7 +275,7 @@ public class PlayerController : MonoBehaviour {
             
             // CAMERA ROTATION
             
-            // lock and unlock cursor when the "L" key is pressed
+            // toggle cursor lock when the "L" key is pressed
             if (Input.GetKeyDown( KeyCode.L )){
                 
                 cursorLocked = !cursorLocked;
