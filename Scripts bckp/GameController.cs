@@ -21,7 +21,7 @@ public class GameController : MonoBehaviour {
 //     [Space(10)]
     [Header("# Context Menu Commands")]
     
-    public Transform playerTransform;
+    // public Transform playerTransform;
     
     [ContextMenuItem("Set Current Position", "setCurrentPosition")]
     public PlayerPositionsNames sendPlayerToPosition;
@@ -45,6 +45,11 @@ public class GameController : MonoBehaviour {
     // CONTEXT MENU COMMANDS
     
     private void setCurrentPosition(){
+            
+        if ( !playerTransform ){
+            playerTransform = GameObject.FindWithTag("Player").GetComponent<Transform>();
+        }
+            
         print("\nTp to " + positionsVectors[sendPlayerToPosition].ToString() );
         playerTransform.position = positionsVectors[sendPlayerToPosition];
     }
@@ -71,7 +76,9 @@ public class GameController : MonoBehaviour {
     
     // PRIVATE VARIABLES
     
-    // private Transform playerTransform;
+    private Transform playerTransform;
+    private PlayerController playerController;
+    
     private UIController uiControllerScript;
     private SceneOnLoadData solDataScript;
     
@@ -101,7 +108,10 @@ public class GameController : MonoBehaviour {
     // Start is called before the first frame update
     private void Start() {
         
-        playerTransform = GameObject.FindWithTag("Player").transform;
+        GameObject playerObject = GameObject.FindWithTag("Player");
+        
+        playerTransform = playerObject.transform;
+        playerController = playerObject.GetComponent<PlayerController>();
         
         uiControllerScript = GameObject.FindWithTag("UIController").GetComponent<UIController>();
         solDataScript = FindAnyObjectByType<SceneOnLoadData>();
@@ -116,6 +126,8 @@ public class GameController : MonoBehaviour {
         isChangingLevel = true;
         
         // Make player not movable
+        playerController.isMovable = false;
+        
         // Load Sequence
         StartCoroutine( LoadingSequence(sceneName) );
     }
@@ -152,6 +164,8 @@ public class GameController : MonoBehaviour {
         uiControllerScript.ActivateLoadScreen(false);
         
         // Make player movable
+        playerController.isMovable = true;
+        
         // Update isChangingLevel
         isChangingLevel = false;
     }

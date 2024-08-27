@@ -41,6 +41,13 @@ public class PlayerController : MonoBehaviour {
     
     
     [Space(10)]
+    [Header("# Key Items")]
+    
+    public bool hasDash = false;
+    public bool hasKey = false;
+    
+    
+    [Space(10)]
     [Header("# Tests & Debug stuff")]
     
     public bool doTestStuff = false;
@@ -77,7 +84,8 @@ public class PlayerController : MonoBehaviour {
     private Vector3 movementInput = Vector3.zero;
     private Vector2 mouseInput = Vector2.zero;
     
-    private bool isMovable;
+    public bool isMovable;
+    // [HideInInspector] public bool isMovable;
     private bool cursorLocked;
     
     private Vector3 prbVelocity;
@@ -101,8 +109,6 @@ public class PlayerController : MonoBehaviour {
     private float glideTime = 0f;
     
     
-    // private bool hasDash = false;
-    [Space(10)] public bool hasDash = false;
     private bool dashAllow = false;
     private bool dashSeqnc = false;
     private Vector3 dashDirection;
@@ -110,6 +116,7 @@ public class PlayerController : MonoBehaviour {
     private float dashSpeed = 0f;
     // public float dashSpeed = 0f;
     private float dashTimer = 0f;
+    
     
     // Singleton
     private static PlayerController instance;
@@ -316,6 +323,9 @@ public class PlayerController : MonoBehaviour {
             playerAnimator.SetBool("jumpSeqnc", jumpSeqnc);
             playerAnimator.SetBool("jumpGlide", jumpGlide);
             playerAnimator.SetBool("isFooted", isFooted);
+        
+        } else {
+            movementInput = Vector3.zero;
         }
         
         
@@ -373,7 +383,7 @@ public class PlayerController : MonoBehaviour {
         // );
     }
     
-    void OnDrawGizmos() {
+    private void OnDrawGizmos() {
         if (activateGizmos) {
             if (isFooted){
                 Gizmos.color = Color.green;
