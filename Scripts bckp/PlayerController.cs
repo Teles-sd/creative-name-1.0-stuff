@@ -96,7 +96,7 @@ public class PlayerController : MonoBehaviour {
     private Vector3 horizontalVelocity;
     
     private Collider[] footColliders;
-    private LayerMask footLayerMask = -1; // everything
+    private LayerMask everythingLayerMask = -1; // everything
     
     private bool isFooted = false;
     private bool coyoteJumpAllow = false;
@@ -161,26 +161,6 @@ public class PlayerController : MonoBehaviour {
         }
     }
     
-//     public void setImovableForSeconds(float waitTime) {
-//         setIsMovable(false);
-//         StartCoroutine(ReenablePlayerMovement(waitTime));
-//     }
-//     
-//     public void setIsMovable(bool val) {
-//         isMovable = val;
-//         if (!val){
-//             
-//             playerRigidbody.velocity = new Vector3(0f, 0f, 0f);
-//             movementInput.x = 0;
-//             movementInput.y = 0;
-//         }
-//     }
-//     
-//     IEnumerator ReenablePlayerMovement(float waitTime){
-//         yield return new WaitForSeconds(waitTime);
-//         setIsMovable(true);
-//     }
-    
     // Update is called once per frame
     private void Update() {
         
@@ -201,7 +181,7 @@ public class PlayerController : MonoBehaviour {
                 center:playerTransform.position + footBoxCenter - new Vector3(0, footBoxSize.y * 0.4f ,0),
                 halfExtents:footBoxSize*0.5f,
                 orientation:Quaternion.identity,
-                layerMask:footLayerMask,
+                layerMask:everythingLayerMask,
                 queryTriggerInteraction:QueryTriggerInteraction.Ignore
             );
 
@@ -400,8 +380,6 @@ public class PlayerController : MonoBehaviour {
             }
         }
     }
-    
-    
     
     // FixedUpdate is called a fixed amount of times per second.
     // Frame-rate independent for physics calculations.

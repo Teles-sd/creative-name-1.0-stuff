@@ -18,6 +18,7 @@ TO_STUFF=~/"Make/creative name 1.0 stuff"
 
 
 cp -uv  "$FROM_UNITY_SCRIPTS"/"CameraController.cs"                 "$TO_STUFF"/"Scripts bckp"
+cp -uv  "$FROM_UNITY_SCRIPTS"/"EnemyController.cs"                 "$TO_STUFF"/"Scripts bckp"
 cp -uv  "$FROM_UNITY_SCRIPTS"/"GameController.cs"                   "$TO_STUFF"/"Scripts bckp"
 cp -uv  "$FROM_UNITY_SCRIPTS"/"ItemDashCollector.cs"                "$TO_STUFF"/"Scripts bckp"
 cp -uv  "$FROM_UNITY_SCRIPTS"/"ItemKeyCollector.cs"                 "$TO_STUFF"/"Scripts bckp"
@@ -26,4 +27,5 @@ cp -uv  "$FROM_UNITY_SCRIPTS"/"LockedCage.cs"                       "$TO_STUFF"/
 cp -uv  "$FROM_UNITY_SCRIPTS"/"PlayerController.cs"                 "$TO_STUFF"/"Scripts bckp"
 cp -uv  "$FROM_UNITY_SCRIPTS"/"SceneOnLoadData.cs"                  "$TO_STUFF"/"Scripts bckp"
 cp -uv  "$FROM_UNITY_SCRIPTS"/"TerrainHeightResolutionFixer.cs"     "$TO_STUFF"/"Scripts bckp"
+cp -uv  "$FROM_UNITY_SCRIPTS"/"ThirdPartyFunctions.cs"              "$TO_STUFF"/"Scripts bckp"
 cp -uv  "$FROM_UNITY_SCRIPTS"/"UIController.cs"                     "$TO_STUFF"/"Scripts bckp"

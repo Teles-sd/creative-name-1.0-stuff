@@ -26,7 +26,8 @@ public class PlayerPositionsVectors {
 
 [System.Serializable]
 public class SpawnPoint {
-    [HideInInspector] public string name;
+    [HideInInspector] 
+    public string name;
     public string fromSceneName;
     public Vector3 position;
 }
