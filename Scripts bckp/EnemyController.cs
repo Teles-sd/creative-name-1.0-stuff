@@ -15,7 +15,7 @@ public class EnemyController : MonoBehaviour {
     [Header("# Idle Movement")]
 
     [SerializeField]
-    [Range(1, 10)] private int movementSpeed = 4;
+    [Range(1, 7)] private int movementSpeed = 3;
     
     [Space(10)]
     [SerializeField]
@@ -331,18 +331,30 @@ public class EnemyController : MonoBehaviour {
             // speed = a + a*log_10 (x+1)
             // a - movementSpeed
             // x - distance, always positive
-            float speed = movementSpeed + movementSpeed*Mathf.Log(distance,10);
+            float speed = movementSpeed + movementSpeed*Mathf.Log(distance+1,10);
+            // speed = Mathf.Clamp(speed/2, movementSpeed*0.5f, movementSpeed*1.5f);
             
             forceVector = forceVector.normalized * speed;
+            // forceVector = forceVector.normalized * speed * 10;
             
-            enemyRigidbody.AddForce(
-                force:  forceVector, 
-                // mode:   ForceMode.Acceleration
-                mode:   ForceMode.VelocityChange
-            );
+            forceVector.y = enemyRigidbody.velocity.y;
+            enemyRigidbody.velocity = forceVector;
             
-            if ( distance < 0.05f ){
+            // enemyRigidbody.AddForce(
+            //     force:  forceVector, 
+            //     // mode:   ForceMode.Acceleration
+            //     mode:   ForceMode.VelocityChange
+            // );
+            
+            if ( distance < 0.1f ){
+                
                 idleState = enemyStates.idleNone;
+                enemyRigidbody.velocity = Vector3.Scale(enemyRigidbody.velocity, new Vector3(0,1,0));
+                
+                // enemyRigidbody.AddForce(
+                //     force:  Vector3.zero, 
+                //     mode:   ForceMode.VelocityChange
+                // );
             }
             // idleWalkTimeCounter += Time.deltaTime;
             // if (idleWalkTimeCounter > idleWalkMaxTime){
@@ -384,7 +396,7 @@ public class EnemyController : MonoBehaviour {
                 agroState,
                 idleWaitTimeCounter,
                 idleWalkTimeCounter,
-                walkPathsFound[wpIndex].rayTargetCenter,
+                wpIndex == -1 ? "none" : walkPathsFound[wpIndex].rayTargetCenter,
             }
         );
     }

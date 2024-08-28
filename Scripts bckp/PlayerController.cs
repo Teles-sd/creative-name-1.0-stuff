@@ -55,7 +55,7 @@ public class PlayerController : MonoBehaviour {
 
     [Space(10)]
     public bool writeToDebugText = false;
-    public TextMeshProUGUI debugTextObject;
+    private TextMeshProUGUI debugTextObject;
     
     
     
@@ -141,8 +141,17 @@ public class PlayerController : MonoBehaviour {
         playerAnimator = GetComponent<Animator>();
         playerBodyCollider = GetComponent<CapsuleCollider>();
         
+        debugTextObject = GameObject.FindWithTag("UIController").GetComponent<UIController>().debugTextObject;
+        
         isMovable = true;
-        cursorLocked = false;
+        // cursorLocked = false;
+        // cursorLocked = true;
+        // Cursor.lockState = CursorLockMode.Locked;
+        // Cursor.lockState = CursorLockMode.None;
+        if (Cursor.lockState == CursorLockMode.None){
+            cursorLocked = false;
+        }
+                
         
         isFooted = false;
         jumpSeqnc = false;
@@ -263,7 +272,7 @@ public class PlayerController : MonoBehaviour {
             // CAMERA ROTATION
             
             // toggle cursor lock when the "L" key is pressed
-            if (Input.GetKeyDown( KeyCode.L )){
+            if ( Input.GetKeyDown(KeyCode.L) || (Input.GetKeyDown(KeyCode.Mouse0) && !cursorLocked) ){
                 
                 cursorLocked = !cursorLocked;
                 
