@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 using UnityEngine.UI;
+using TMPro;
 
 public class UIController : MonoBehaviour {
     
@@ -16,6 +17,7 @@ public class UIController : MonoBehaviour {
     [Space(10)]
     [Header("# Debug")]
     public GameObject debugPanel;
+    public TextMeshProUGUI debugTextObject;
     
     
     
