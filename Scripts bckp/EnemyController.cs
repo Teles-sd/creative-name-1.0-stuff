@@ -17,27 +17,47 @@ public class EnemyController : MonoBehaviour {
     [SerializeField]
     [Range(1, 7)] private int movementSpeed = 3;
     
+    
+    [Space(10)]
+    [SerializeField]
+    private int detcDistance;
+    [SerializeField]
+    private int agroDistance;
+    
+    
     [Space(10)]
     [SerializeField]
     [Range(1, 10)] private int idleWaitMinRandTime = 1;
     [SerializeField]
     [Range(1, 10)] private int idleWaitMaxRandTime = 7;
-    
     [SerializeField]
     [Range(1, 10)] private int idlePathSearchQuantity = 5;
     [SerializeField]
-    [Range(2, 10)] private int idleWalkMaxTime = 10;
+    [Range(2, 7)] private int idleWalkTime = 7;
+    
+    
+    [Space(10)]
+    [SerializeField]
+    [Range(1, 5)] private int detcWalkTime = 2;
+    
+    
+    [Space(10)]
+    [SerializeField]
+    [Range(1, 5)] private int agroDashTime = 3;
+    [SerializeField]
+    [Range(2, 6)] private int agroDashSpeedMultiplier = 4;
     
     
     [Space(10)]
     [Header("# Tests & Debug stuff")]
     
     [SerializeField]
-    [ContextMenuItem("Run Start()", "runStart")]
+    [ContextMenuItem("Run Start()", "Start")]
+    [ContextMenuItem("Run resetAllSubStates()", "resetAllSubStates")]
     [ContextMenuItem("Test idlePathFind", "testidlePathFind")]
     [ContextMenuItem("Test prints", "testprints")]
     private bool doTestStuff = false;
-    private void runStart(){ Start(); }
+    // private void runStart(){ Start(); }
     private bool startCheck = false;
     private void testidlePathFind(){
         wpIndex = -1;
@@ -48,6 +68,7 @@ public class EnemyController : MonoBehaviour {
         // print(Vector3.down);
         // print(enemyBodyCollider.height);
     }
+    
     
     [Space(10)]
     [SerializeField]
@@ -70,7 +91,7 @@ public class EnemyController : MonoBehaviour {
 
     // private Transform playerTransform;
     // private PlayerController playerController;
-    // private CapsuleCollider playerBodyCollider;
+    private CapsuleCollider playerBodyCollider;
     
     private TextMeshProUGUI debugTextObject;
     
@@ -78,16 +99,28 @@ public class EnemyController : MonoBehaviour {
     private Vector3 checkCapStr;
     private Vector3 checkCapEnd;
     
-    private enemyStates state = enemyStates.idle;
-    private enemyStates idleState = enemyStates.idleNone;
-    private enemyStates detcState = enemyStates.detcNone;
-    private enemyStates agroState = enemyStates.agroNone;
+    [Space(10)] [SerializeField] private enemyStates state = enemyStates.idle;
+    // private enemyStates state = enemyStates.idle;
+    private enemyStates idleState = enemyStates.idleReset;
+    private enemyStates detcState = enemyStates.detcReset;
+    private enemyStates agroState = enemyStates.agroReset;
+    private bool detcTired;
     
     private float idleWaitTime;
     private float idleWaitTimeCounter = 0;
     private WalkPath[] walkPathsFound;
     private int wpIndex = -1;               // default invalid value
     private float idleWalkTimeCounter = 0;
+    
+    private Vector3 currentTarget;
+    
+    private float detcWalkTimeCounter = 0;
+    private int detcWaitTime = 1;
+    private float detcWaitTimeCounter = 0;
+    
+    private int agroAimTime = 1;
+    private float timeCounter = 0;
+    private Vector3 agroDashVelocity;
     
 
     
@@ -102,11 +135,11 @@ public class EnemyController : MonoBehaviour {
         enemyRigidbody = gameObject.GetComponent<Rigidbody>();
         // enemyTransform = gameObject.GetComponent<Transform>();
         
-//         GameObject playerObject = GameObject.FindWithTag("Player");
+        GameObject playerObject = GameObject.FindWithTag("Player");
 //         
 //         playerTransform = playerObject.transform;
 //         playerController = playerObject.GetComponent<PlayerController>();
-//         playerBodyCollider = playerObject.GetComponent<CapsuleCollider>();
+        playerBodyCollider = playerObject.GetComponent<CapsuleCollider>();
         
         debugTextObject = GameObject.FindWithTag("UIController").GetComponent<UIController>().debugTextObject;
         
@@ -126,6 +159,14 @@ public class EnemyController : MonoBehaviour {
             idleLogic();
         }
         
+        if (state == enemyStates.detc){
+            detcLogic();
+        }
+        
+        if (state == enemyStates.agro){
+            agroLogic();
+        }
+        
         
         // DEBUG STUFF
         
@@ -142,21 +183,22 @@ public class EnemyController : MonoBehaviour {
             idleMovement();
         }
         
+        if (state == enemyStates.detc){
+            detcMovement();
+        }
+        
+        if (state == enemyStates.agro){
+            agroMovement();
+        }
+        
     }
     
     private void OnDrawGizmos() {
-        if (activateGizmos) {
+        if (activateGizmos && startCheck) {
             
-            // if (idleState == enemyStates.idleWalking){
-            if (startCheck){
-                foreach
-                    (
-                        var
-                        wpf
-                        in
-                        walkPathsFound
-                    )
-                    {
+            if (state == enemyStates.idle){
+            // if (startCheck){
+                foreach(var wpf in walkPathsFound){
                     
                     if (wpf.selected){
                         Gizmos.color = Color.green;
@@ -185,6 +227,19 @@ public class EnemyController : MonoBehaviour {
                         enemyBodyCollider.radius
                     );
                 }
+            // } else if (state == enemyStates.detc){
+            } else {
+                
+                if (state == enemyStates.detc){
+                    Gizmos.color = Color.yellow;
+                } else {
+                    Gizmos.color = Color.red;
+                }
+                
+                Gizmos.DrawRay(
+                    from:       enemyBodyCollider.bounds.center,
+                    direction:  currentTarget - enemyBodyCollider.bounds.center
+                );
             }
         }
     }
@@ -268,27 +323,75 @@ public class EnemyController : MonoBehaviour {
         return walkPathsFound;
     }
     
+    // calculates enemy velocity proportional to distance from target
+    private (Vector3 vel,float dist) calcVelDist(Vector3 current, Vector3 target){
+        
+        Vector3 velocityVector = target - current;
+        float distance = velocityVector.magnitude;
+        // speed = a + a*log_10 (x+1)
+        // a - movementSpeed
+        // x - distance, always positive
+        float speed = movementSpeed + movementSpeed*Mathf.Log(distance+1,10);
+        // speed = Mathf.Clamp(speed/2, movementSpeed*0.5f, movementSpeed*1.5f);
+        
+        // remove Y component before normalize
+        velocityVector.y = 0;
+        
+        velocityVector = velocityVector.normalized * speed;
+        // velocityVector = velocityVector.normalized * speed * 10;
+        
+        return (velocityVector,distance);
+    }
+    
+    private bool RandomBool(){
+        return Random.Range(0, 2) == 1;
+    }
+        
+    // sets the Rigidbody velocity, ignoring (not modifying) its y component
+    private void setRBxzVelocity(Vector3 vel){
+        vel.y = enemyRigidbody.velocity.y;
+        enemyRigidbody.velocity = vel;
+    }
+    
+    private void resetAllStates(){
+        state = enemyStates.idle;
+        resetAllSubStates();
+    }
+    
+    private void resetAllSubStates(){
+        idleState = enemyStates.idleReset;
+        detcState = enemyStates.detcReset;
+        agroState = enemyStates.agroReset;
+        detcTired = false;
+    }
+    
     private enum enemyStates{
         idle,
-        idleNone,
+        idleReset,
         idleWaiting,
         idlePathing,
         idleWalking,
         detc,
-        detcNone,
+        detcReset,
+        detcWaiting,
+        detcWalking,
         agro,
-        agroNone,
+        agroReset,
+        agroAiming,
+        agroDashing,
     };
     
     private void idleLogic() {
         // state == enemyStates.idle;
         
-        // wait random time
-        if (idleState == enemyStates.idleNone){
+        // reset
+        if (idleState == enemyStates.idleReset){
             idleWaitTime = Random.Range( (float)idleWaitMinRandTime, (float)idleWaitMaxRandTime );
             idleState = enemyStates.idleWaiting;
             idleWaitTimeCounter = 0;
         }
+        
+        // wait random time
         if (idleState == enemyStates.idleWaiting){
             idleWaitTimeCounter += Time.deltaTime;
             if (idleWaitTimeCounter > idleWaitTime){
@@ -296,26 +399,27 @@ public class EnemyController : MonoBehaviour {
             }
         }
         
-        // walk randomly
+        // pathing
         if (idleState == enemyStates.idlePathing){
             
             wpIndex = -1;
             walkPathsFound = idlePathFind(idlePathSearchQuantity);
             
             if (wpIndex == -1){
-                idleState = enemyStates.idleNone;
+                idleState = enemyStates.idleReset;
             } else {
                 idleState = enemyStates.idleWalking;
                 idleWalkTimeCounter = 0;
             }
         }
+        
+        // walk randomly
         if (idleState == enemyStates.idleWalking){
             idleWalkTimeCounter += Time.deltaTime;
-            if (idleWalkTimeCounter > idleWalkMaxTime){
-                idleState = enemyStates.idleNone;
+            if (idleWalkTimeCounter > idleWalkTime){
+                idleState = enemyStates.idleReset;
             }
         }
-        
     }
     
     private void idleMovement() {
@@ -323,33 +427,38 @@ public class EnemyController : MonoBehaviour {
         
         if (idleState == enemyStates.idleWalking){
             
-            Vector3 target = walkPathsFound[wpIndex].rayTargetCenter;
             Vector3 current = enemyBodyCollider.bounds.center;
+            Vector3 target = walkPathsFound[wpIndex].rayTargetCenter;
             
-            Vector3 forceVector = target - current;
-            float distance = forceVector.magnitude;
-            // speed = a + a*log_10 (x+1)
-            // a - movementSpeed
-            // x - distance, always positive
-            float speed = movementSpeed + movementSpeed*Mathf.Log(distance+1,10);
-            // speed = Mathf.Clamp(speed/2, movementSpeed*0.5f, movementSpeed*1.5f);
+//             Vector3 velocityVector = target - current;
+//             float distance = velocityVector.magnitude;
+//             // speed = a + a*log_10 (x+1)
+//             // a - movementSpeed
+//             // x - distance, always positive
+//             float speed = movementSpeed + movementSpeed*Mathf.Log(distance+1,10);
+//             // speed = Mathf.Clamp(speed/2, movementSpeed*0.5f, movementSpeed*1.5f);
+//             
+//             velocityVector = velocityVector.normalized * speed;
+//             // velocityVector = velocityVector.normalized * speed * 10;
             
-            forceVector = forceVector.normalized * speed;
-            // forceVector = forceVector.normalized * speed * 10;
+            // var (velocityVector,distance) = calcVelDist(current,target);
+            (Vector3 velocityVector,float distance) = calcVelDist(current,target);
             
-            forceVector.y = enemyRigidbody.velocity.y;
-            enemyRigidbody.velocity = forceVector;
+            // velocityVector.y = enemyRigidbody.velocity.y;
+            // enemyRigidbody.velocity = velocityVector;
+            setRBxzVelocity(velocityVector);
             
             // enemyRigidbody.AddForce(
-            //     force:  forceVector, 
+            //     force:  velocityVector, 
             //     // mode:   ForceMode.Acceleration
             //     mode:   ForceMode.VelocityChange
             // );
             
             if ( distance < 0.1f ){
                 
-                idleState = enemyStates.idleNone;
-                enemyRigidbody.velocity = Vector3.Scale(enemyRigidbody.velocity, new Vector3(0,1,0));
+                idleState = enemyStates.idleReset;
+                // enemyRigidbody.velocity = Vector3.Scale(enemyRigidbody.velocity, new Vector3(0,1,0));
+                setRBxzVelocity(Vector3.zero);
                 
                 // enemyRigidbody.AddForce(
                 //     force:  Vector3.zero, 
@@ -357,48 +466,155 @@ public class EnemyController : MonoBehaviour {
                 // );
             }
             // idleWalkTimeCounter += Time.deltaTime;
-            // if (idleWalkTimeCounter > idleWalkMaxTime){
-            //     idleState = enemyStates.idleNone;
+            // if (idleWalkTimeCounter > idleWalkTime){
+            //     idleState = enemyStates.idleReset;
             // }
         }
     }
     
     private void detcLogic() {
         // state == enemyStates.detc;
+        
+        // reset
+        if (detcState == enemyStates.detcReset){
+            detcState = enemyStates.detcWalking;
+            detcWalkTimeCounter = 0;
+            
+            // when detc state is reset, decide at random if its gonna stop between intervals
+            detcTired = RandomBool();
+        }
+        
+        // walk towards player
+        if (detcState == enemyStates.detcWalking && detcTired){
+            detcWalkTimeCounter += Time.deltaTime;
+            if (detcWalkTimeCounter > detcWalkTime){
+                detcState = enemyStates.detcWaiting;
+                detcWaitTimeCounter = 0;
+            }
+        }
+            
+        // wait small time
+        if (detcState == enemyStates.detcWaiting){
+            detcWaitTimeCounter += Time.deltaTime;
+            if (detcWaitTimeCounter > detcWaitTime){
+                detcState = enemyStates.detcWalking;
+                detcWalkTimeCounter = 0;
+            }
+        }
     }
     
     private void detcMovement() {
         // state == enemyStates.detc;
+        
+        if (detcState == enemyStates.detcWalking){
+            
+//             Vector3 current = enemyBodyCollider.bounds.center;
+//             // Vector3 target = playerBodyCollider.bounds.center;
+//             currentTarget = playerBodyCollider.bounds.center;
+//             
+//             (Vector3 velocityVector,_) = calcVelDist(current,currentTarget);
+            
+            currentTarget = playerBodyCollider.bounds.center;
+
+            (Vector3 velocityVector,_) = calcVelDist(enemyBodyCollider.bounds.center,currentTarget);
+            
+            setRBxzVelocity(velocityVector);
+        }
     }
     
     private void agroLogic() {
         // state == enemyStates.agro;
+        
+        // reset
+        if (agroState == enemyStates.agroReset){
+            agroState = enemyStates.agroAiming;
+            timeCounter = 0;
+        }
+            
+        // wait to aim/track
+        if (agroState == enemyStates.agroAiming){
+            
+            timeCounter += Time.deltaTime;
+            currentTarget = playerBodyCollider.bounds.center;
+            
+            if (timeCounter > agroAimTime){
+                
+                // randomly decide if attacks or chases some more
+                if (RandomBool()){
+                    agroState = enemyStates.agroDashing;
+                    timeCounter = 0;
+                    
+                    agroDashVelocity = currentTarget - enemyBodyCollider.bounds.center;
+                    agroDashVelocity.y = 0;
+                    agroDashVelocity = agroDashVelocity.normalized * movementSpeed * agroDashSpeedMultiplier;
+                    
+                }else{
+                    agroState = enemyStates.agroReset;
+                }
+            }
+        }
+        
+        // dash chosen direction
+        if (agroState == enemyStates.agroDashing){
+            timeCounter += Time.deltaTime;
+            if (timeCounter > agroDashTime){
+                agroState = enemyStates.agroReset;
+            }
+        }
     }
     
     private void agroMovement() {
         // state == enemyStates.agro;
+        
+        if (agroState == enemyStates.agroDashing){
+            setRBxzVelocity(agroDashVelocity);
+        }
     }
     
     private void writeToDebugFunc() {
         debugTextObject.text = string.Format(
-            "    state : {0}\n" +
-            "idleState : {1}\n" +
-            "detcState : {2}\n" +
-            "agroState : {3}\n" +
-            "idleWaitTimeCounter : {4}\n" +
-            "idleWalkTimeCounter : {5}\n" +
-            "target : {6}\n" +
+            "       state : {0}\n" +
+            "" +
+            "   idleState : {1}\n" +
+            "   detcState : {2}\n" +
+            "   agroState : {3}\n" +
+            "" +
+            "   detcTired : {4}\n" +
+            "detcWaitTimeCounter : {5}\n" +
+            "detcWalkTimeCounter : {6}\n" +
+            "" +
+            "timeCounter : {7}\n" +
             "",
             new object[] {
                 state,
                 idleState,
                 detcState,
                 agroState,
-                idleWaitTimeCounter,
-                idleWalkTimeCounter,
-                wpIndex == -1 ? "none" : walkPathsFound[wpIndex].rayTargetCenter,
+                detcTired,
+                detcWaitTimeCounter,
+                detcWalkTimeCounter,
+                timeCounter,
             }
         );
+        // debugTextObject.text = string.Format(
+        //     "       state : {0}\n" +
+        //     "   idleState : {1}\n" +
+        //     "   detcState : {2}\n" +
+        //     "   agroState : {3}\n" +
+        //     "idleWaitTimeCounter : {4}\n" +
+        //     "idleWalkTimeCounter : {5}\n" +
+        //     "target : {6}\n" +
+        //     "",
+        //     new object[] {
+        //         state,
+        //         idleState,
+        //         detcState,
+        //         agroState,
+        //         idleWaitTimeCounter,
+        //         idleWalkTimeCounter,
+        //         wpIndex == -1 ? "none" : walkPathsFound[wpIndex].rayTargetCenter,
+        //     }
+        // );
     }
     
 }
