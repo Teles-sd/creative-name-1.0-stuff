@@ -105,21 +105,18 @@ public class EnemyController : MonoBehaviour {
     private enemyStates detcState = enemyStates.detcReset;
     private enemyStates agroState = enemyStates.agroReset;
     private bool detcTired;
+    private float timeCounter = 0;
+    
     
     private float idleWaitTime;
-    private float idleWaitTimeCounter = 0;
     private WalkPath[] walkPathsFound;
     private int wpIndex = -1;               // default invalid value
-    private float idleWalkTimeCounter = 0;
     
     private Vector3 currentTarget;
     
-    private float detcWalkTimeCounter = 0;
     private int detcWaitTime = 1;
-    private float detcWaitTimeCounter = 0;
     
     private int agroAimTime = 1;
-    private float timeCounter = 0;
     private Vector3 agroDashVelocity;
     
 
@@ -363,6 +360,7 @@ public class EnemyController : MonoBehaviour {
         detcState = enemyStates.detcReset;
         agroState = enemyStates.agroReset;
         detcTired = false;
+        timeCounter = 0;
     }
     
     private enum enemyStates{
@@ -388,13 +386,13 @@ public class EnemyController : MonoBehaviour {
         if (idleState == enemyStates.idleReset){
             idleWaitTime = Random.Range( (float)idleWaitMinRandTime, (float)idleWaitMaxRandTime );
             idleState = enemyStates.idleWaiting;
-            idleWaitTimeCounter = 0;
+            timeCounter = 0;
         }
         
         // wait random time
         if (idleState == enemyStates.idleWaiting){
-            idleWaitTimeCounter += Time.deltaTime;
-            if (idleWaitTimeCounter > idleWaitTime){
+            timeCounter += Time.deltaTime;
+            if (timeCounter > idleWaitTime){
                 idleState = enemyStates.idlePathing;
             }
         }
@@ -409,14 +407,14 @@ public class EnemyController : MonoBehaviour {
                 idleState = enemyStates.idleReset;
             } else {
                 idleState = enemyStates.idleWalking;
-                idleWalkTimeCounter = 0;
+                timeCounter = 0;
             }
         }
         
         // walk randomly
         if (idleState == enemyStates.idleWalking){
-            idleWalkTimeCounter += Time.deltaTime;
-            if (idleWalkTimeCounter > idleWalkTime){
+            timeCounter += Time.deltaTime;
+            if (timeCounter > idleWalkTime){
                 idleState = enemyStates.idleReset;
             }
         }
@@ -465,8 +463,8 @@ public class EnemyController : MonoBehaviour {
                 //     mode:   ForceMode.VelocityChange
                 // );
             }
-            // idleWalkTimeCounter += Time.deltaTime;
-            // if (idleWalkTimeCounter > idleWalkTime){
+            // timeCounter += Time.deltaTime;
+            // if (timeCounter > idleWalkTime){
             //     idleState = enemyStates.idleReset;
             // }
         }
@@ -478,7 +476,7 @@ public class EnemyController : MonoBehaviour {
         // reset
         if (detcState == enemyStates.detcReset){
             detcState = enemyStates.detcWalking;
-            detcWalkTimeCounter = 0;
+            timeCounter = 0;
             
             // when detc state is reset, decide at random if its gonna stop between intervals
             detcTired = RandomBool();
@@ -486,19 +484,19 @@ public class EnemyController : MonoBehaviour {
         
         // walk towards player
         if (detcState == enemyStates.detcWalking && detcTired){
-            detcWalkTimeCounter += Time.deltaTime;
-            if (detcWalkTimeCounter > detcWalkTime){
+            timeCounter += Time.deltaTime;
+            if (timeCounter > detcWalkTime){
                 detcState = enemyStates.detcWaiting;
-                detcWaitTimeCounter = 0;
+                timeCounter = 0;
             }
         }
             
         // wait small time
         if (detcState == enemyStates.detcWaiting){
-            detcWaitTimeCounter += Time.deltaTime;
-            if (detcWaitTimeCounter > detcWaitTime){
+            timeCounter += Time.deltaTime;
+            if (timeCounter > detcWaitTime){
                 detcState = enemyStates.detcWalking;
-                detcWalkTimeCounter = 0;
+                timeCounter = 0;
             }
         }
     }
@@ -574,16 +572,13 @@ public class EnemyController : MonoBehaviour {
     private void writeToDebugFunc() {
         debugTextObject.text = string.Format(
             "       state : {0}\n" +
-            "" +
+            "\n" +
             "   idleState : {1}\n" +
             "   detcState : {2}\n" +
             "   agroState : {3}\n" +
-            "" +
+            "\n" +
             "   detcTired : {4}\n" +
-            "detcWaitTimeCounter : {5}\n" +
-            "detcWalkTimeCounter : {6}\n" +
-            "" +
-            "timeCounter : {7}\n" +
+            "timeCounter : {5}\n" +
             "",
             new object[] {
                 state,
@@ -591,8 +586,6 @@ public class EnemyController : MonoBehaviour {
                 detcState,
                 agroState,
                 detcTired,
-                detcWaitTimeCounter,
-                detcWalkTimeCounter,
                 timeCounter,
             }
         );
@@ -601,8 +594,8 @@ public class EnemyController : MonoBehaviour {
         //     "   idleState : {1}\n" +
         //     "   detcState : {2}\n" +
         //     "   agroState : {3}\n" +
-        //     "idleWaitTimeCounter : {4}\n" +
-        //     "idleWalkTimeCounter : {5}\n" +
+        //     "timeCounter : {4}\n" +
+        //     "timeCounter : {5}\n" +
         //     "target : {6}\n" +
         //     "",
         //     new object[] {
@@ -610,8 +603,8 @@ public class EnemyController : MonoBehaviour {
         //         idleState,
         //         detcState,
         //         agroState,
-        //         idleWaitTimeCounter,
-        //         idleWalkTimeCounter,
+        //         timeCounter,
+        //         timeCounter,
         //         wpIndex == -1 ? "none" : walkPathsFound[wpIndex].rayTargetCenter,
         //     }
         // );
