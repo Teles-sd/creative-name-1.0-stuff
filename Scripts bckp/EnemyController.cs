@@ -53,7 +53,7 @@ public class EnemyController : MonoBehaviour {
     
     [SerializeField]
     [ContextMenuItem("Run Start()", "Start")]
-    [ContextMenuItem("Run resetAllSubStates()", "resetAllSubStates")]
+    [ContextMenuItem("Run resetSubStates()", "resetSubStates")]
     [ContextMenuItem("Test idlePathFind", "testidlePathFind")]
     [ContextMenuItem("Test prints", "testprints")]
     private bool doTestStuff = false;
@@ -107,7 +107,6 @@ public class EnemyController : MonoBehaviour {
     private bool detcTired;
     private float timeCounter = 0;
     
-    
     private float idleWaitTime;
     private WalkPath[] walkPathsFound;
     private int wpIndex = -1;               // default invalid value
@@ -119,7 +118,9 @@ public class EnemyController : MonoBehaviour {
     private int agroAimTime = 1;
     private Vector3 agroDashVelocity;
     
-
+    private bool randomBoolEverySecond;
+    private float rbesTimeCounter;
+    
     
     
     // BUILT-IN EVENT FUNCTIONS
@@ -146,11 +147,18 @@ public class EnemyController : MonoBehaviour {
         
         // just to instanciate this dude so he stops complaining
         walkPathsFound = idlePathFind(idlePathSearchQuantity);
+        currentTarget = playerBodyCollider.bounds.center;
         startCheck = true;
     }
 
     // Update is called once per frame
     void Update() {
+        
+        RandomBoolEverySecondFunc();
+        
+        if (state == enemyStates.idle || state == enemyStates.detc || agroState == enemyStates.agroReset){
+            determineState();
+        }
         
         if (state == enemyStates.idle){
             idleLogic();
@@ -205,9 +213,13 @@ public class EnemyController : MonoBehaviour {
                         Gizmos.color = Color.yellow;
                     }
                     
-                    Gizmos.DrawRay(
-                        from:       wpf.rayOrigin,
-                        direction:  wpf.rayDirection * wpf.randomDist
+                    // Gizmos.DrawRay(
+                    //     from:       wpf.rayOrigin,
+                    //     direction:  wpf.rayDirection * wpf.randomDist
+                    // );
+                    Gizmos.DrawLine(
+                        from:   wpf.rayOrigin,
+                        to:     wpf.rayTargetCenter
                     );
                     
                     if (wpf.selected){
@@ -224,7 +236,7 @@ public class EnemyController : MonoBehaviour {
                         enemyBodyCollider.radius
                     );
                 }
-            // } else if (state == enemyStates.detc){
+                
             } else {
                 
                 if (state == enemyStates.detc){
@@ -233,11 +245,37 @@ public class EnemyController : MonoBehaviour {
                     Gizmos.color = Color.red;
                 }
                 
-                Gizmos.DrawRay(
-                    from:       enemyBodyCollider.bounds.center,
-                    direction:  currentTarget - enemyBodyCollider.bounds.center
+                // Gizmos.DrawRay(
+                //     from:       enemyBodyCollider.bounds.center,
+                //     direction:  currentTarget - enemyBodyCollider.bounds.center
+                // );
+                Gizmos.DrawLine(
+                    from:enemyBodyCollider.bounds.center,
+                    to:  currentTarget
                 );
+                
+                Gizmos.color = Color.red;
+                
+                // if (!doTestStuff){
+                // Gizmos.DrawSphere(
+                //     center:enemyBodyCollider.bounds.center,
+                //     radius:agroDistance
+                // );
+                // }else{
+                Gizmos.DrawWireSphere(
+                    center:enemyBodyCollider.bounds.center,
+                    radius:agroDistance
+                );
+                // }
+
             }
+                
+            Gizmos.color = Color.yellow;
+            
+            Gizmos.DrawWireSphere(
+                center:enemyBodyCollider.bounds.center,
+                radius:detcDistance
+            );
         }
     }
     
@@ -340,8 +378,19 @@ public class EnemyController : MonoBehaviour {
         return (velocityVector,distance);
     }
     
+    // returns a random value every time it's called;
     private bool RandomBool(){
         return Random.Range(0, 2) == 1;
+    }
+    
+    // sets a random value (`randomBoolEverySecond`) that changes every second;
+    private void RandomBoolEverySecondFunc(){
+        
+        rbesTimeCounter += Time.deltaTime;
+        if (rbesTimeCounter > 1){
+            rbesTimeCounter = 0;
+            randomBoolEverySecond = RandomBool();
+        }
     }
         
     // sets the Rigidbody velocity, ignoring (not modifying) its y component
@@ -350,17 +399,38 @@ public class EnemyController : MonoBehaviour {
         enemyRigidbody.velocity = vel;
     }
     
-    private void resetAllStates(){
-        state = enemyStates.idle;
-        resetAllSubStates();
+    private void resetAllStates(enemyStates s = enemyStates.idle){
+        state = s;
+        resetSubStates();
     }
     
-    private void resetAllSubStates(){
+    private void resetSubStates(){
         idleState = enemyStates.idleReset;
         detcState = enemyStates.detcReset;
         agroState = enemyStates.agroReset;
         detcTired = false;
         timeCounter = 0;
+    }
+    
+    private void determineState(){
+        // state == enemyStates.idle;
+        // or
+        // state == enemyStates.detc;
+        // or
+        // agroState == enemyStates.agroReset;
+                    
+        float distance = Vector3.Distance(enemyBodyCollider.bounds.center,playerBodyCollider.bounds.center);
+
+        if (state != enemyStates.agro && distance <= agroDistance){
+            // every second within the agro distance it has a chance to agro
+            if (randomBoolEverySecond){
+                resetAllStates(enemyStates.agro);
+            }
+        } else if (state != enemyStates.detc && distance <= detcDistance){
+            resetAllStates(enemyStates.detc);
+        } else if (state != enemyStates.idle && distance > detcDistance){
+            resetAllStates(enemyStates.idle);
+        }
     }
     
     private enum enemyStates{
