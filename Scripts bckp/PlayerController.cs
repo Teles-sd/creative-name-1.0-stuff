@@ -21,7 +21,7 @@ public class PlayerController : MonoBehaviour {
     [Range(0.1f, .5f)] public float coyoteTime = 0.25f;
     
     [Space(10)]
-    [Range(1.5f, 5f)] public float dashSpeedMultplier = 3f;
+    [Range(2, 5)] public int dashSpeedMultplier = 4;
     [Range(0f, 1f)] public float dashTotalTime = 0.5f;
     
     
@@ -75,11 +75,8 @@ public class PlayerController : MonoBehaviour {
     // private Vector3 inputVelocity;
     private float facingAngle;
     private Vector3 inputDirection;
-    private Vector3 horizontalVelocity;
+    // private Vector3 horizontalVelocity;
     
-    // Foot box center position (relative to the player
-    // but not reflected on Gizmos if Player scale is changed).
-    // private Vector3 footBoxCenter = Vector3.zero;
     // Foot box size (relative to the player,
     // but not reflected on Gizmos if Player scale is changed).
     private Vector3 footBoxSize = new Vector3(0.707f,0.15f,0.707f);
@@ -155,6 +152,8 @@ public class PlayerController : MonoBehaviour {
     // Update is called once per frame
     private void Update() {
         
+        updateIsFooted();
+        
         if (isMovable) {
             
             movementInputLogic();
@@ -180,13 +179,15 @@ public class PlayerController : MonoBehaviour {
     // Frame-rate independent for physics calculations.
     private void FixedUpdate() {
         
-        // variable used to store values for movement, jump and dash
+        // Variable used to store values for movement, jump and dash
         prbVelocity = playerRigidbody.velocity;
         
         movementCalc();
         jumpCalc();
         dashCalc();
         cameraCalc();
+        
+        playerRigidbody.velocity = prbVelocity;
     }
     
     private void OnDrawGizmos() {
@@ -218,10 +219,46 @@ public class PlayerController : MonoBehaviour {
         return playerTransform.position - new Vector3(0, footBoxSize.y * 0.4f ,0);
     }
     
-    // sets the Rigidbody velocity, ignoring (not modifying) its y component
-    private void setRBxzVelocity(Vector3 vel){
-        vel.y = playerRigidbody.velocity.y;
-        playerRigidbody.velocity = vel;
+    private void updateIsFooted() {
+        
+        footColliders = Physics.OverlapBox(
+            center:footBoxCenter(),
+            halfExtents:footBoxSize*0.5f,
+            orientation:Quaternion.identity,
+            layerMask:everythingLayerMask,
+            queryTriggerInteraction:QueryTriggerInteraction.Ignore
+        );
+
+        isFooted = false;
+        
+        foreach (var fc in footColliders){
+            if ( fc != playerBodyCollider ){
+                isFooted = true;
+                break;
+            }
+        }
+    }
+    
+    private void updateCoyoteJump() {
+        
+        if (!coyoteJumpAllow && isFooted){
+            coyoteJumpAllow = true;
+            coyoteTimeCounter = 0f;
+        }
+        
+        if (coyoteJumpAllow && !isFooted){
+            coyoteTimeCounter += Time.deltaTime;
+        }
+        
+        if (coyoteTimeCounter >= coyoteTime){
+            coyoteJumpAllow = false;
+        }
+    }
+    
+    // sets the prbVelocity, ignoring (not modifying) its y component
+    private void setPRBxzVelocity(Vector3 vel){
+        vel.y = prbVelocity.y;
+        prbVelocity = vel;
     }
     
     
@@ -243,39 +280,10 @@ public class PlayerController : MonoBehaviour {
         
         // JUMP
         
-        footColliders = Physics.OverlapBox(
-            center:footBoxCenter(),
-            halfExtents:footBoxSize*0.5f,
-            orientation:Quaternion.identity,
-            layerMask:everythingLayerMask,
-            queryTriggerInteraction:QueryTriggerInteraction.Ignore
-        );
-
-        isFooted = false;
-        
-        foreach (var fc in footColliders){
-            if ( fc != playerBodyCollider ){
-                isFooted = true;
-                break;
-            }
-        }
-        
-        if (!coyoteJumpAllow && isFooted){
-            coyoteJumpAllow = true;
-            coyoteTimeCounter = 0f;
-        }
-        
-        if (coyoteJumpAllow && !isFooted){
-            coyoteTimeCounter += Time.deltaTime;
-        }
-        
-        if (coyoteTimeCounter >= coyoteTime){
-            coyoteJumpAllow = false;
-        }
+        updateCoyoteJump();
         
         // conditions to initiate jump sequence
         if (Input.GetButtonDown("Jump") && coyoteJumpAllow && !jumpSeqnc){
-        // if (Input.GetButtonDown("Jump") && isFooted && !jumpSeqnc){
             jumpSeqnc = true;
             jumpStart = true;
             jumpHoldn = true;
@@ -378,18 +386,16 @@ public class PlayerController : MonoBehaviour {
         
         // MOVEMENT (if not dashing)
         
-//         inputVelocity = movementInput.normalized * movementSpeed;
-//         
-//         horizontalVelocity = Quaternion.AngleAxis(facingAngle, Vector3.up) * inputVelocity;
-        
         inputDirection = Quaternion.AngleAxis(facingAngle, Vector3.up) * movementInput;
+        inputDirection = inputDirection.normalized;
         
         if (!dashSeqnc){
-            horizontalVelocity =  inputDirection.normalized * movementSpeed;
+            // prbVelocity = inputDirection.normalized * movementSpeed;
+            setPRBxzVelocity(inputDirection * movementSpeed);
         }
         
-        prbVelocity.x = horizontalVelocity.x;
-        prbVelocity.z = horizontalVelocity.z;
+        // prbVelocity.x = horizontalVelocity.x;
+        // prbVelocity.z = horizontalVelocity.z;
     }
     
     private void jumpCalc() {
@@ -419,8 +425,6 @@ public class PlayerController : MonoBehaviour {
         if ( !jumpSeqnc ){
             playerRigidbody.AddForce(Physics.gravity * (gravityScale - 1), ForceMode.Acceleration);
         }
-
-        playerRigidbody.velocity = prbVelocity;
     }
     
     private void dashCalc() {
@@ -431,7 +435,8 @@ public class PlayerController : MonoBehaviour {
             
             dashSpeed = Mathf.Lerp(movementSpeed * dashSpeedMultplier, movementSpeed, dashTimer/dashTotalTime);
             
-            horizontalVelocity =  dashDirection.normalized * dashSpeed;
+            // prbVelocity =  dashDirection.normalized * dashSpeed;
+            setPRBxzVelocity(dashDirection * dashSpeed);
             
             dashTimer += Time.fixedDeltaTime;
             
@@ -440,8 +445,8 @@ public class PlayerController : MonoBehaviour {
             }
         }
         
-        prbVelocity.x = horizontalVelocity.x;
-        prbVelocity.z = horizontalVelocity.z;
+        // prbVelocity.x = horizontalVelocity.x;
+        // prbVelocity.z = horizontalVelocity.z;
     }
         
     private void cameraCalc() {
@@ -472,39 +477,5 @@ public class PlayerController : MonoBehaviour {
                 mouseInput.x,
             }
         );
-        
-        // if (writeToDebugText) {
-        //     debugTextObject.text = string.Format(
-        //         "jumpSeqnc {0}\n" +
-        //         "jumpStart {1}\n" +
-        //         "jumpHoldn {2}\n" +
-        //         "jumpGlide {3}\n" +
-        //         "prbVelocity {4}\n" +
-        //         "isFooted {5}\n" +
-        //         "",
-        //         new object[] {
-        //             jumpSeqnc,
-        //             jumpStart,
-        //             jumpHoldn,
-        //             jumpGlide,
-        //             prbVelocity,
-        //             isFooted,
-        //         }
-        //     );
-        // }
-        
-        // debugTextObject.text = string.Format(
-        //     "inputVelocity {1}\n" +
-        //     "facingAngle {0}\n" +
-        //     "horizontalVelocity {2}\n" +
-        //     "prbVelocity {3}\n" +
-        //     "",
-        //     new object[] {
-        //         inputVelocity,
-        //         facingAngle,
-        //         horizontalVelocity,
-        //         prbVelocity,
-        //     }
-        // );
     }
 }
