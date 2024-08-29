@@ -59,6 +59,6 @@ public class LockedCage : MonoBehaviour {
             );
             yield return 0; 
         }
-        print("ye");
+        // print("ye");
     }
 }

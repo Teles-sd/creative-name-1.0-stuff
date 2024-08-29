@@ -5,7 +5,6 @@ using UnityEngine;
 using TMPro;
 
 using ThirdPartyFunctions;
-// using static ThirdPartyFunctions.TPFs;
 
 public class EnemyController : MonoBehaviour {
 
@@ -57,7 +56,6 @@ public class EnemyController : MonoBehaviour {
     [ContextMenuItem("Test idlePathFind", "testidlePathFind")]
     [ContextMenuItem("Test prints", "testprints")]
     private bool doTestStuff = false;
-    // private void runStart(){ Start(); }
     private bool startCheck = false;
     private void testidlePathFind(){
         wpIndex = -1;
@@ -76,10 +74,6 @@ public class EnemyController : MonoBehaviour {
 
     [SerializeField]
     private bool writeToDebugText = false;
-    
-    // [Space(10)]
-    // [SerializeField]
-    // private WalkPath[] walkPathsFound;
     
     
     
@@ -283,6 +277,7 @@ public class EnemyController : MonoBehaviour {
     
     // FUNCTIONS & CLASSES
     
+    
     [System.Serializable]
     private class WalkPath{
         public Vector3 rayOrigin;
@@ -392,7 +387,7 @@ public class EnemyController : MonoBehaviour {
             randomBoolEverySecond = RandomBool();
         }
     }
-        
+    
     // sets the Rigidbody velocity, ignoring (not modifying) its y component
     private void setRBxzVelocity(Vector3 vel){
         vel.y = enemyRigidbody.velocity.y;

@@ -7,7 +7,7 @@ using TMPro;
 public class PlayerController : MonoBehaviour {
     
 
-    // PUBLIC VARIABLES
+    // SERIALIZED
     
     [Header("# Movement")]
 
@@ -21,28 +21,13 @@ public class PlayerController : MonoBehaviour {
     [Range(0.1f, .5f)] public float coyoteTime = 0.25f;
     
     [Space(10)]
-    [ContextMenuItem("Reset footBoxCenter", "footBoxCenterResetter")]
-    [Tooltip(
-        "Foot box center position (relative to the player, " + 
-        "but not reflected on Gizmos if Player scale is changed)."
-    )]
-    public Vector3 footBoxCenter;
-    
-    [ContextMenuItem("Reset footBoxSize", "footBoxSizeResetter")]
-    [Tooltip(
-        "Foot box size (relative to the player, " + 
-        "but not reflected on Gizmos if Player scale is changed)."
-    )]
-    public Vector3 footBoxSize;
-    
-    [Space(10)]
     [Range(1.5f, 5f)] public float dashSpeedMultplier = 3f;
     [Range(0f, 1f)] public float dashTotalTime = 0.5f;
     
     
     [Space(10)]
     [Header("# Key Items")]
-    
+
     public bool hasDash = false;
     public bool hasKey = false;
     
@@ -55,7 +40,6 @@ public class PlayerController : MonoBehaviour {
 
     [Space(10)]
     public bool writeToDebugText = false;
-    private TextMeshProUGUI debugTextObject;
     
     
     
@@ -67,25 +51,23 @@ public class PlayerController : MonoBehaviour {
     
     // RESETTERS
     
-    private void footBoxCenterResetter(){ footBoxCenter = Vector3.zero; }
-    // private void footBoxSizeResetter(){ footBoxSize = new Vector3(1,0.2f,1); }
-    private void footBoxSizeResetter(){ footBoxSize = new Vector3(0.707f,0.15f,0.707f); }
-    // private void footBoxSizeResetter(){ footBoxSize = new Vector3(0.85f,0.15f,0.85f); }
     
     
     
-    // PRIVATE VARIABLES
+    // NOT SERIALIZED
     
     private Rigidbody playerRigidbody;
     private Transform playerTransform;
     private Animator playerAnimator;
     private CapsuleCollider playerBodyCollider;
     
+    private TextMeshProUGUI debugTextObject;
+    
     private Vector3 movementInput = Vector3.zero;
     private Vector2 mouseInput = Vector2.zero;
     
-    public bool isMovable;
-    // [HideInInspector] public bool isMovable;
+    // public bool isMovable;
+    [HideInInspector] public bool isMovable;
     private bool cursorLocked;
     
     private Vector3 prbVelocity;
@@ -95,6 +77,12 @@ public class PlayerController : MonoBehaviour {
     private Vector3 inputDirection;
     private Vector3 horizontalVelocity;
     
+    // Foot box center position (relative to the player
+    // but not reflected on Gizmos if Player scale is changed).
+    // private Vector3 footBoxCenter = Vector3.zero;
+    // Foot box size (relative to the player,
+    // but not reflected on Gizmos if Player scale is changed).
+    private Vector3 footBoxSize = new Vector3(0.707f,0.15f,0.707f);
     private Collider[] footColliders;
     private LayerMask everythingLayerMask = -1; // everything
     
@@ -112,10 +100,10 @@ public class PlayerController : MonoBehaviour {
     private bool dashAllow = false;
     private bool dashSeqnc = false;
     private Vector3 dashDirection;
-    // public Vector3 dashDirection;
     private float dashSpeed = 0f;
-    // public float dashSpeed = 0f;
     private float dashTimer = 0f;
+    
+    private int health = 2;     // max: 2
     
     
     // Singleton
@@ -125,7 +113,8 @@ public class PlayerController : MonoBehaviour {
     
     
     
-    // FUNCTIONS
+    // BUILT-IN EVENT FUNCTIONS
+    
     
     // Called first upon initialisation of an object
     private void Awake() {
@@ -161,13 +150,6 @@ public class PlayerController : MonoBehaviour {
         
         facingAngle = playerTransform.rotation.eulerAngles.y;
         dashDirection = Quaternion.AngleAxis(facingAngle, Vector3.up) * Vector3.forward;
-        
-        if (footBoxCenter == Vector3.zero){
-            footBoxCenterResetter();
-        }
-        if (footBoxSize == Vector3.zero){
-            footBoxSizeResetter();
-        }
     }
     
     // Update is called once per frame
@@ -175,167 +157,321 @@ public class PlayerController : MonoBehaviour {
         
         if (isMovable) {
             
-            // MOVEMENT
-            
-            movementInput.x = Input.GetAxisRaw("Horizontal");
-            movementInput.z = Input.GetAxisRaw("Vertical");
-            
-            facingAngle = playerTransform.rotation.eulerAngles.y;
-            
-            
-            
-            // JUMP
-            
-            footColliders = Physics.OverlapBox(
-                center:playerTransform.position + footBoxCenter - new Vector3(0, footBoxSize.y * 0.4f ,0),
-                halfExtents:footBoxSize*0.5f,
-                orientation:Quaternion.identity,
-                layerMask:everythingLayerMask,
-                queryTriggerInteraction:QueryTriggerInteraction.Ignore
-            );
-
-            isFooted = false;
-            
-            foreach (var fc in footColliders){
-                if ( fc != playerBodyCollider ){
-                    isFooted = true;
-                    break;
-                }
-            }
-            
-            if (!coyoteJumpAllow && isFooted){
-                coyoteJumpAllow = true;
-                coyoteTimeCounter = 0f;
-            }
-            
-            if (coyoteJumpAllow && !isFooted){
-                coyoteTimeCounter += Time.deltaTime;
-            }
-            
-            if (coyoteTimeCounter >= coyoteTime){
-                coyoteJumpAllow = false;
-            }
-            
-            // conditions to initiate jump sequence
-            if (Input.GetButtonDown("Jump") && coyoteJumpAllow && !jumpSeqnc){
-            // if (Input.GetButtonDown("Jump") && isFooted && !jumpSeqnc){
-                jumpSeqnc = true;
-                jumpStart = true;
-                jumpHoldn = true;
-                jumpGlide = false;
-                glideTime = 0f;
-            }
-            
-            // conditions to continue the jump
-            if (jumpSeqnc && !jumpStart){
-                
-                if (jumpHoldn){
-                    
-                    if ( !Input.GetButton("Jump") ){
-                        jumpHoldn = false;
-                        jumpGlide = false;
-                    }else if ( prbVelocity.y < 0 ) {
-                        jumpHoldn = false;
-                        jumpGlide = true;
-                    }
-                }
-                
-                // still holding after jump hit apex
-                if (jumpGlide){
-                    
-                    if ( !Input.GetButton("Jump") || glideTime > jumpGlideMaxTime){
-                        jumpGlide = false;
-                    }
-                }
-            }
-            
-            
-            
-            // DASH
-            
-            if (!dashSeqnc && inputDirection != Vector3.zero){
-                dashDirection = inputDirection;
-            }
-            
-            if ( Input.GetKeyDown(KeyCode.Mouse0) && dashAllow && cursorLocked){
-                dashSeqnc = true;
-                dashAllow = false;
-                dashTimer = 0f;
-            }
-            
-            if (!dashAllow && hasDash && !dashSeqnc && isFooted){
-                dashAllow = true;
-            }
-            
-            
-            
-            // CAMERA ROTATION
-            
-            // toggle cursor lock when the "L" key is pressed
-            if ( Input.GetKeyDown(KeyCode.L) || (Input.GetKeyDown(KeyCode.Mouse0) && !cursorLocked) ){
-                
-                cursorLocked = !cursorLocked;
-                
-                if (cursorLocked){
-                    Cursor.lockState = CursorLockMode.Locked;
-                } else {
-                    Cursor.lockState = CursorLockMode.None;
-                }
-            }
-            
-            if (cursorLocked){
-                mouseInput.x = Mathf.Clamp( Input.GetAxis("Mouse X"), -3, 3 );
-                mouseInput.y = Mathf.Clamp( Input.GetAxis("Mouse Y"), -3, 3 );
-                // mouseInput.y = limitMouseInput( Input.GetAxis("Mouse Y"), 1 );
-            } else {
-                mouseInput.x = 0f;
-                mouseInput.y = 0f;
-            }
-            
-            
-            
-            // ANIMATION
-            
-            // only updates animator direction if there is horizontal movement
-            if (movementInput.x != 0) {
-                playerAnimator.SetFloat("Horizontal", movementInput.x);
-            }
-            
-            // updates animator state if there is any movement
-            if (movementInput != Vector3.zero) {
-                playerAnimator.SetBool("Walking", true);
-            } else {
-                playerAnimator.SetBool("Walking", false);
-            }
-            
-            // updates animator jumping states
-            playerAnimator.SetBool("jumpSeqnc", jumpSeqnc);
-            playerAnimator.SetBool("jumpGlide", jumpGlide);
-            playerAnimator.SetBool("isFooted", isFooted);
+            movementInputLogic();
+            jumpInputLogic();
+            dashInputLogic();
+            mouseInputLogic(); // better after dash logic, due to same mouse input
         
         } else {
             movementInput = Vector3.zero;
         }
         
+        animatorParametersUpdate();
         
         
         // DEBUG STUFF
         
         if (writeToDebugText) {
-            debugTextObject.text = string.Format(
-                "prbVelocity {0}\n" +
-                "cursorLocked {1}\n" +
-                "Input.GetAxis(\"Mouse X\") {2}\n" +
-                "mouseInput.x {3}\n" +
-                "",
-                new object[] {
-                    prbVelocity,
-                    cursorLocked,
-                    Input.GetAxis("Mouse X"),
-                    mouseInput.x,
-                }
-            );
+            writeToDebugFunc();
         }
+    }
+    
+    // FixedUpdate is called a fixed amount of times per second.
+    // Frame-rate independent for physics calculations.
+    private void FixedUpdate() {
+        
+        // variable used to store values for movement, jump and dash
+        prbVelocity = playerRigidbody.velocity;
+        
+        movementCalc();
+        jumpCalc();
+        dashCalc();
+        cameraCalc();
+    }
+    
+    private void OnDrawGizmos() {
+        if (activateGizmos) {
+            if (isFooted){
+                Gizmos.color = Color.green;
+            } else {
+                Gizmos.color = Color.red;
+            }
+            
+            if (playerTransform){
+                Gizmos.DrawWireCube(
+                    center:footBoxCenter(),
+                    size:footBoxSize
+                );
+            } else {
+                playerTransform = GetComponent<Transform>();
+            }
+        }
+    }
+    
+    
+    
+    // AUXILIARY FUNCTIONS
+    
+    
+    private Vector3 footBoxCenter() {
+        // 0.4f under the base of the playerBodyCollider so it still overlaps a bit with it
+        return playerTransform.position - new Vector3(0, footBoxSize.y * 0.4f ,0);
+    }
+    
+    // sets the Rigidbody velocity, ignoring (not modifying) its y component
+    private void setRBxzVelocity(Vector3 vel){
+        vel.y = playerRigidbody.velocity.y;
+        playerRigidbody.velocity = vel;
+    }
+    
+    
+    
+    // LOGIC & CALC FUNCTIONS (update & fixed update)
+    
+    private void movementInputLogic() {
+        
+        // MOVEMENT
+        
+        movementInput.x = Input.GetAxisRaw("Horizontal");
+        movementInput.z = Input.GetAxisRaw("Vertical");
+        
+        facingAngle = playerTransform.rotation.eulerAngles.y;
+        
+    }
+    
+    private void jumpInputLogic() {
+        
+        // JUMP
+        
+        footColliders = Physics.OverlapBox(
+            center:footBoxCenter(),
+            halfExtents:footBoxSize*0.5f,
+            orientation:Quaternion.identity,
+            layerMask:everythingLayerMask,
+            queryTriggerInteraction:QueryTriggerInteraction.Ignore
+        );
+
+        isFooted = false;
+        
+        foreach (var fc in footColliders){
+            if ( fc != playerBodyCollider ){
+                isFooted = true;
+                break;
+            }
+        }
+        
+        if (!coyoteJumpAllow && isFooted){
+            coyoteJumpAllow = true;
+            coyoteTimeCounter = 0f;
+        }
+        
+        if (coyoteJumpAllow && !isFooted){
+            coyoteTimeCounter += Time.deltaTime;
+        }
+        
+        if (coyoteTimeCounter >= coyoteTime){
+            coyoteJumpAllow = false;
+        }
+        
+        // conditions to initiate jump sequence
+        if (Input.GetButtonDown("Jump") && coyoteJumpAllow && !jumpSeqnc){
+        // if (Input.GetButtonDown("Jump") && isFooted && !jumpSeqnc){
+            jumpSeqnc = true;
+            jumpStart = true;
+            jumpHoldn = true;
+            jumpGlide = false;
+            glideTime = 0f;
+        }
+        
+        // conditions to continue the jump
+        if (jumpSeqnc && !jumpStart){
+            
+            if (jumpHoldn){
+                
+                if ( !Input.GetButton("Jump") ){
+                    jumpHoldn = false;
+                    jumpGlide = false;
+                }else if ( prbVelocity.y < 0 ) {
+                    jumpHoldn = false;
+                    jumpGlide = true;
+                }
+            }
+            
+            // still holding after jump hit apex
+            if (jumpGlide){
+                
+                if ( !Input.GetButton("Jump") || glideTime > jumpGlideMaxTime){
+                    jumpGlide = false;
+                }
+            }
+        }
+    }
+    
+    private void dashInputLogic() {
+        
+        // DASH
+        
+        if (!dashSeqnc && inputDirection != Vector3.zero){
+            dashDirection = inputDirection;
+        }
+        
+        if ( Input.GetKeyDown(KeyCode.Mouse0) && dashAllow && cursorLocked){
+            dashSeqnc = true;
+            dashAllow = false;
+            dashTimer = 0f;
+        }
+        
+        if (!dashAllow && hasDash && !dashSeqnc && isFooted){
+            dashAllow = true;
+        }
+    }
+        
+    private void mouseInputLogic() {
+        
+        // MOUSE INPUT (for camera rotation)
+        
+        // toggle cursor lock when the "L" key is pressed
+        if ( Input.GetKeyDown(KeyCode.L) || (Input.GetKeyDown(KeyCode.Mouse0) && !cursorLocked) ){
+            
+            cursorLocked = !cursorLocked;
+            
+            if (cursorLocked){
+                Cursor.lockState = CursorLockMode.Locked;
+            } else {
+                Cursor.lockState = CursorLockMode.None;
+            }
+        }
+        
+        if (cursorLocked){
+            mouseInput.x = Mathf.Clamp( Input.GetAxis("Mouse X"), -3, 3 );
+            mouseInput.y = Mathf.Clamp( Input.GetAxis("Mouse Y"), -3, 3 );
+            // mouseInput.y = limitMouseInput( Input.GetAxis("Mouse Y"), 1 );
+        } else {
+            mouseInput.x = 0f;
+            mouseInput.y = 0f;
+        }
+    }
+    
+    private void animatorParametersUpdate() {
+        
+        // ANIMATION
+        
+        // only updates animator direction if there is horizontal movement
+        if (movementInput.x != 0) {
+            playerAnimator.SetFloat("Horizontal", movementInput.x);
+        }
+        
+        // updates animator state if there is any movement
+        if (movementInput != Vector3.zero) {
+            playerAnimator.SetBool("Walking", true);
+        } else {
+            playerAnimator.SetBool("Walking", false);
+        }
+        
+        // updates animator jumping states
+        playerAnimator.SetBool("jumpSeqnc", jumpSeqnc);
+        playerAnimator.SetBool("jumpGlide", jumpGlide);
+        playerAnimator.SetBool("isFooted", isFooted);
+    }
+        
+    private void movementCalc() {
+        
+        // MOVEMENT (if not dashing)
+        
+//         inputVelocity = movementInput.normalized * movementSpeed;
+//         
+//         horizontalVelocity = Quaternion.AngleAxis(facingAngle, Vector3.up) * inputVelocity;
+        
+        inputDirection = Quaternion.AngleAxis(facingAngle, Vector3.up) * movementInput;
+        
+        if (!dashSeqnc){
+            horizontalVelocity =  inputDirection.normalized * movementSpeed;
+        }
+        
+        prbVelocity.x = horizontalVelocity.x;
+        prbVelocity.z = horizontalVelocity.z;
+    }
+    
+    private void jumpCalc() {
+        
+        // JUMP
+        
+        if (jumpStart){
+            prbVelocity.y = jumpForce;
+            jumpStart = false;
+        }
+        
+        if (jumpSeqnc){
+            
+            if (jumpGlide) {
+
+                prbVelocity.y = 0.4f * Physics.gravity.y * gravityScale * Time.fixedDeltaTime;
+                
+                glideTime += Time.fixedDeltaTime;
+                
+            } else if ( !jumpHoldn ) {
+                jumpSeqnc = false;
+            }
+            
+        }
+        
+        // extra gravity for snappy jump
+        if ( !jumpSeqnc ){
+            playerRigidbody.AddForce(Physics.gravity * (gravityScale - 1), ForceMode.Acceleration);
+        }
+
+        playerRigidbody.velocity = prbVelocity;
+    }
+    
+    private void dashCalc() {
+        
+        // DASH
+        
+        if (dashSeqnc){
+            
+            dashSpeed = Mathf.Lerp(movementSpeed * dashSpeedMultplier, movementSpeed, dashTimer/dashTotalTime);
+            
+            horizontalVelocity =  dashDirection.normalized * dashSpeed;
+            
+            dashTimer += Time.fixedDeltaTime;
+            
+            if (dashTimer >= dashTotalTime){
+                dashSeqnc = false;
+            }
+        }
+        
+        prbVelocity.x = horizontalVelocity.x;
+        prbVelocity.z = horizontalVelocity.z;
+    }
+        
+    private void cameraCalc() {
+        
+        // CAMERA ROTATION
+        
+        playerTransform.Rotate(
+            axis: Vector3.up,
+            angle: mouseInput.x * cameraRotationSpeed
+        );
+    }
+    
+    private void takeDamage() {
+        
+    }
+    
+    private void writeToDebugFunc() {
+        debugTextObject.text = string.Format(
+            "prbVelocity {0}\n" +
+            "cursorLocked {1}\n" +
+            "Input.GetAxis(\"Mouse X\") {2}\n" +
+            "mouseInput.x {3}\n" +
+            "",
+            new object[] {
+                prbVelocity,
+                cursorLocked,
+                Input.GetAxis("Mouse X"),
+                mouseInput.x,
+            }
+        );
         
         // if (writeToDebugText) {
         //     debugTextObject.text = string.Format(
@@ -370,101 +506,5 @@ public class PlayerController : MonoBehaviour {
         //         prbVelocity,
         //     }
         // );
-    }
-    
-    private void OnDrawGizmos() {
-        if (activateGizmos) {
-            if (isFooted){
-                Gizmos.color = Color.green;
-            } else {
-                Gizmos.color = Color.red;
-            }
-            
-            if (playerTransform){
-                Gizmos.DrawWireCube(
-                    center:playerTransform.position + footBoxCenter - new Vector3(0, footBoxSize.y * 0.4f ,0),
-                    size:footBoxSize);
-            } else {
-                playerTransform = GetComponent<Transform>();
-            }
-        }
-    }
-    
-    // FixedUpdate is called a fixed amount of times per second.
-    // Frame-rate independent for physics calculations.
-    private void FixedUpdate() {
-        
-        // variable used to store values for movement, jump and dash
-        prbVelocity = playerRigidbody.velocity;
-        
-        
-        
-        // MOVEMENT (and DASH)
-        
-//         inputVelocity = movementInput.normalized * movementSpeed;
-//         
-//         horizontalVelocity = Quaternion.AngleAxis(facingAngle, Vector3.up) * inputVelocity;
-        
-        inputDirection = Quaternion.AngleAxis(facingAngle, Vector3.up) * movementInput;
-        
-        if (!dashSeqnc){
-            horizontalVelocity =  inputDirection.normalized * movementSpeed;
-        } else {
-        
-            // DASH
-            
-            dashSpeed = Mathf.Lerp(movementSpeed * dashSpeedMultplier, movementSpeed, dashTimer/dashTotalTime);
-            
-            horizontalVelocity =  dashDirection.normalized * dashSpeed;
-            
-            dashTimer += Time.fixedDeltaTime;
-            
-            if (dashTimer >= dashTotalTime){
-                dashSeqnc = false;
-            }
-        }
-        
-        prbVelocity.x = horizontalVelocity.x;
-        prbVelocity.z = horizontalVelocity.z;
-        
-        
-        
-        // JUMP
-        
-        if (jumpStart){
-            prbVelocity.y = jumpForce;
-            jumpStart = false;
-        }
-        
-        if (jumpSeqnc){
-            
-            if (jumpGlide) {
-
-                prbVelocity.y = 0.4f * Physics.gravity.y * gravityScale * Time.fixedDeltaTime;
-                
-                glideTime += Time.fixedDeltaTime;
-                
-            } else if ( !jumpHoldn ) {
-                jumpSeqnc = false;
-            }
-            
-        }
-        
-        // extra gravity for snappy jump
-        if ( !jumpSeqnc ){
-            playerRigidbody.AddForce(Physics.gravity * (gravityScale - 1), ForceMode.Acceleration);
-        }
-
-        playerRigidbody.velocity = prbVelocity;
-        
-        
-        
-        // CAMERA ROTATION
-        
-        playerTransform.Rotate(
-            axis: Vector3.up,
-            angle: mouseInput.x * cameraRotationSpeed
-        );
-        
     }
 }
