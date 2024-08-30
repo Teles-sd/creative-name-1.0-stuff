@@ -11,18 +11,19 @@ public class EnemyController : MonoBehaviour {
     
     // SERIALIZED
     
-    [Header("# Idle Movement")]
-
+    [Header("# Behaviour")]
+    
     [SerializeField]
-    [Range(1, 7)] private int movementSpeed = 3;
+    private int detcDistance = 15;
+    [SerializeField]
+    private int agroDistance = 10;
     
     
     [Space(10)]
+    [Header("## Idle")]
+
     [SerializeField]
-    private int detcDistance;
-    [SerializeField]
-    private int agroDistance;
-    
+    [Range(1, 7)] private int movementSpeed = 3;
     
     [Space(10)]
     [SerializeField]
@@ -36,17 +37,21 @@ public class EnemyController : MonoBehaviour {
     
     
     [Space(10)]
+    [Header("## Detection")]
+    
     [SerializeField]
     [Range(1, 5)] private int detcWalkTime = 2;
     
     
     [Space(10)]
+    [Header("## Agro")]
+    
     [SerializeField]
     [Range(1, 5)] private int agroDashTime = 3;
     [SerializeField]
     [Range(2, 6)] private int agroDashSpeedMultiplier = 4;
     
-    
+
     [Space(10)]
     [Header("# Tests & Debug stuff")]
     
@@ -67,11 +72,9 @@ public class EnemyController : MonoBehaviour {
         // print(enemyBodyCollider.height);
     }
     
-    
     [Space(10)]
     [SerializeField]
     private bool activateGizmos = false;
-
     [SerializeField]
     private bool writeToDebugText = false;
     
@@ -84,7 +87,7 @@ public class EnemyController : MonoBehaviour {
     // private Transform enemyTransform;
 
     // private Transform playerTransform;
-    // private PlayerController playerController;
+    private PlayerController playerController;
     private CapsuleCollider playerBodyCollider;
     
     private TextMeshProUGUI debugTextObject;
@@ -93,12 +96,12 @@ public class EnemyController : MonoBehaviour {
     private Vector3 checkCapStr;
     private Vector3 checkCapEnd;
     
-    [Space(10)] [SerializeField] private enemyStates state = enemyStates.idle;
-    // private enemyStates state = enemyStates.idle;
+    private enemyStates state = enemyStates.idle;
     private enemyStates idleState = enemyStates.idleReset;
     private enemyStates detcState = enemyStates.detcReset;
     private enemyStates agroState = enemyStates.agroReset;
     private bool detcTired;
+    
     private float timeCounter = 0;
     
     private float idleWaitTime;
@@ -115,6 +118,9 @@ public class EnemyController : MonoBehaviour {
     private bool randomBoolEverySecond;
     private float rbesTimeCounter;
     
+    private bool timeToDie = false;
+    private Vector3 knockDirection;
+    
     
     
     // BUILT-IN EVENT FUNCTIONS
@@ -130,7 +136,7 @@ public class EnemyController : MonoBehaviour {
         GameObject playerObject = GameObject.FindWithTag("Player");
 //         
 //         playerTransform = playerObject.transform;
-//         playerController = playerObject.GetComponent<PlayerController>();
+        playerController = playerObject.GetComponent<PlayerController>();
         playerBodyCollider = playerObject.GetComponent<CapsuleCollider>();
         
         debugTextObject = GameObject.FindWithTag("UIController").GetComponent<UIController>().debugTextObject;
@@ -178,18 +184,48 @@ public class EnemyController : MonoBehaviour {
     // Frame-rate independent for physics calculations.
     void FixedUpdate() {
         
-        if (state == enemyStates.idle){
-            idleMovement();
+        if ( !timeToDie ){
+            
+            if (state == enemyStates.idle){
+                idleMovement();
+            }
+            
+            if (state == enemyStates.detc){
+                detcMovement();
+            }
+            
+            if (state == enemyStates.agro){
+                agroMovement();
+            }
+            
+        } else {
+            takeDamageAndDie();
         }
+    }
+    
+    private void OnCollisionEnter(Collision collision) {
         
-        if (state == enemyStates.detc){
-            detcMovement();
+        foreach (ContactPoint contact in collision.contacts) {
+            
+            if ( contact.otherCollider.CompareTag("Player") && playerController.dashSeqnc ){
+                
+                timeToDie = true;
+                timeCounter = 0;
+                
+                knockDirection = contact.normal;
+                
+                // knockDirection *= -1;                       // oppisite direction
+                knockDirection.y = 0;                       // on the XZ plane
+                knockDirection = knockDirection.normalized;
+                knockDirection.y = 1;                       // 45 deg. with XZ plane (because normalized)
+                knockDirection = knockDirection.normalized;
+                
+                // Debug.DrawRay(contact.point, knockDirection * 5, Color.white, 5);
+                // Debug.DrawRay(contact.point, knockDirection * 5, Color.black, 5);
+                
+                break;
+            }
         }
-        
-        if (state == enemyStates.agro){
-            agroMovement();
-        }
-        
     }
     
     private void OnDrawGizmos() {
@@ -239,10 +275,6 @@ public class EnemyController : MonoBehaviour {
                     Gizmos.color = Color.red;
                 }
                 
-                // Gizmos.DrawRay(
-                //     from:       enemyBodyCollider.bounds.center,
-                //     direction:  currentTarget - enemyBodyCollider.bounds.center
-                // );
                 Gizmos.DrawLine(
                     from:enemyBodyCollider.bounds.center,
                     to:  currentTarget
@@ -250,17 +282,10 @@ public class EnemyController : MonoBehaviour {
                 
                 Gizmos.color = Color.red;
                 
-                // if (!doTestStuff){
-                // Gizmos.DrawSphere(
-                //     center:enemyBodyCollider.bounds.center,
-                //     radius:agroDistance
-                // );
-                // }else{
                 Gizmos.DrawWireSphere(
                     center:enemyBodyCollider.bounds.center,
                     radius:agroDistance
                 );
-                // }
 
             }
                 
@@ -364,7 +389,7 @@ public class EnemyController : MonoBehaviour {
         float speed = movementSpeed + movementSpeed*Mathf.Log(distance+1,10);
         // speed = Mathf.Clamp(speed/2, movementSpeed*0.5f, movementSpeed*1.5f);
         
-        // remove Y component before normalize
+        // remove Y component before normalized
         velocityVector.y = 0;
         
         velocityVector = velocityVector.normalized * speed;
@@ -603,7 +628,7 @@ public class EnemyController : MonoBehaviour {
             if (timeCounter > agroAimTime){
                 
                 // randomly decide if attacks or chases some more
-                if (RandomBool()){
+                if (RandomBool() && !playerController.immune){
                     agroState = enemyStates.agroDashing;
                     timeCounter = 0;
                     
@@ -631,6 +656,19 @@ public class EnemyController : MonoBehaviour {
         
         if (agroState == enemyStates.agroDashing){
             setRBxzVelocity(agroDashVelocity);
+        }
+    }
+    
+    private void takeDamageAndDie() {
+        
+        enemyRigidbody.velocity = knockDirection * (20 * (1-timeCounter) );
+
+        timeCounter += Time.fixedDeltaTime;
+        
+        if (timeCounter > 0.5f ) {
+            
+            // die
+            Destroy(gameObject);
         }
     }
     

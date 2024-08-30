@@ -26,6 +26,11 @@ public class PlayerController : MonoBehaviour {
     
     
     [Space(10)]
+    [Header("# Misc")]
+    [Range(2, 7)] public int immunityTime = 4;
+    
+    
+    [Space(10)]
     [Header("# Key Items")]
 
     public bool hasDash = false;
@@ -61,21 +66,19 @@ public class PlayerController : MonoBehaviour {
     private Animator playerAnimator;
     private CapsuleCollider playerBodyCollider;
     
+    private UIController uiController;
     private TextMeshProUGUI debugTextObject;
     
     private Vector3 movementInput = Vector3.zero;
     private Vector2 mouseInput = Vector2.zero;
     
-    // public bool isMovable;
     [HideInInspector] public bool isMovable;
     private bool cursorLocked;
     
     private Vector3 prbVelocity;
     
-    // private Vector3 inputVelocity;
     private float facingAngle;
     private Vector3 inputDirection;
-    // private Vector3 horizontalVelocity;
     
     // Foot box size (relative to the player,
     // but not reflected on Gizmos if Player scale is changed).
@@ -93,14 +96,17 @@ public class PlayerController : MonoBehaviour {
     private bool jumpGlide = false;
     private float glideTime = 0f;
     
-    
     private bool dashAllow = false;
-    private bool dashSeqnc = false;
+    [HideInInspector] public bool dashSeqnc = false;
     private Vector3 dashDirection;
     private float dashSpeed = 0f;
     private float dashTimer = 0f;
     
     private int health = 2;     // max: 2
+    [HideInInspector] public bool immune = false;
+    private float immunityTimeCounter = 0;
+    private bool applyKnockback = false;
+    private Vector3 knockDirection;
     
     
     // Singleton
@@ -127,8 +133,6 @@ public class PlayerController : MonoBehaviour {
         playerAnimator = GetComponent<Animator>();
         playerBodyCollider = GetComponent<CapsuleCollider>();
         
-        debugTextObject = GameObject.FindWithTag("UIController").GetComponent<UIController>().debugTextObject;
-        
         isMovable = true;
         // cursorLocked = false;
         // cursorLocked = true;
@@ -149,6 +153,15 @@ public class PlayerController : MonoBehaviour {
         dashDirection = Quaternion.AngleAxis(facingAngle, Vector3.up) * Vector3.forward;
     }
     
+    // Start is called before the first frame update
+    private void Start() {
+        
+        uiController = GameObject.FindWithTag("UIController").GetComponent<UIController>();
+        debugTextObject = uiController.debugTextObject;
+        
+        uiController.UpdateKeyItemsPanel(hasDash, hasKey);
+    }
+    
     // Update is called once per frame
     private void Update() {
         
@@ -167,6 +180,9 @@ public class PlayerController : MonoBehaviour {
         
         animatorParametersUpdate();
         
+        if (immune) {
+            takeDamageLogic();
+        }
         
         // DEBUG STUFF
         
@@ -182,12 +198,47 @@ public class PlayerController : MonoBehaviour {
         // Variable used to store values for movement, jump and dash
         prbVelocity = playerRigidbody.velocity;
         
-        movementCalc();
-        jumpCalc();
-        dashCalc();
-        cameraCalc();
+        if ( !applyKnockback ){
+            movementCalc();
+            jumpCalc();
+            dashCalc();
+            cameraCalc();
+        } else {
+            takeDamageKnock();
+        }
         
         playerRigidbody.velocity = prbVelocity;
+    }
+    
+    private void OnCollisionEnter(Collision collision) {
+        
+        foreach (ContactPoint contact in collision.contacts) {
+            
+            if ( contact.otherCollider.CompareTag("Enemy") && !immune && !dashSeqnc ){
+                
+                immune = true;
+                immunityTimeCounter = 0;
+                applyKnockback = true;
+                
+                health -= 1;
+                
+                // update UI
+                uiController.UpdateHealth(health);
+
+                knockDirection = contact.normal;
+                
+                // knockDirection *= -1;                       // oppisite direction
+                knockDirection.y = 0;                       // on the XZ plane
+                knockDirection = knockDirection.normalized;
+                knockDirection.y = 1;                       // 45 deg. with XZ plane (because normalized)
+                knockDirection = knockDirection.normalized;
+                
+                // Debug.DrawRay(contact.point, knockDirection * 5, Color.white, 5);
+                // Debug.DrawRay(contact.point, knockDirection * 5, Color.black, 5);
+                
+                break;
+            }
+        }
     }
     
     private void OnDrawGizmos() {
@@ -459,22 +510,44 @@ public class PlayerController : MonoBehaviour {
         );
     }
     
-    private void takeDamage() {
+    private void takeDamageLogic() {
+        immunityTimeCounter += Time.deltaTime;
+        if (immunityTimeCounter > immunityTime) {
+            immune = false;
+        }
+    }
+    
+    private void takeDamageKnock() {
         
+        // prbVelocity = knockDirection * knockMultiplier;
+        // prbVelocity += knockDirection * (knockMultiplier * (1-immunityTimeCounter));
+        prbVelocity = knockDirection * (20 * (1-immunityTimeCounter) );
+
+        if (immunityTimeCounter > 0.5f ) {
+            applyKnockback = false;
+            prbVelocity = Vector3.zero;
+        }
+        
+        // playerRigidbody.AddForce(
+        //     force:  prbVelocity = knockDirection * knockMultiplier,
+        //     mode:   ForceMode.VelocityChange
+        // );
+        
+        // applyKnockback = false;
     }
     
     private void writeToDebugFunc() {
         debugTextObject.text = string.Format(
-            "prbVelocity {0}\n" +
-            "cursorLocked {1}\n" +
-            "Input.GetAxis(\"Mouse X\") {2}\n" +
-            "mouseInput.x {3}\n" +
+            "immune: {0}\n" +
+            "immunityTimeCounter: {1}\n" +
+            "applyKnockback: {2}\n" +
+            "knockDirection: {3}\n" +
             "",
             new object[] {
-                prbVelocity,
-                cursorLocked,
-                Input.GetAxis("Mouse X"),
-                mouseInput.x,
+                immune,
+                immunityTimeCounter,
+                applyKnockback,
+                knockDirection,
             }
         );
     }

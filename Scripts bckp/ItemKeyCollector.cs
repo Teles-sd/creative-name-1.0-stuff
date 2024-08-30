@@ -20,7 +20,7 @@ public class ItemKeyCollector : MonoBehaviour {
     private CapsuleCollider playerBodyCollider;
     private PlayerController playerController;
     
-    // private bool isCollected;
+    private UIController uiController;
     
     
     
@@ -34,6 +34,8 @@ public class ItemKeyCollector : MonoBehaviour {
         playerBodyCollider = playerObject.GetComponent<CapsuleCollider>();
         playerController = playerObject.GetComponent<PlayerController>();
         
+        uiController = GameObject.FindWithTag("UIController").GetComponent<UIController>();
+        
         if (playerController.hasKey && !respawnAfterCollect){
             gameObject.SetActive(false);
         }
@@ -43,6 +45,8 @@ public class ItemKeyCollector : MonoBehaviour {
         if (other == playerBodyCollider) {
             
             playerController.hasKey = true;
+            
+            uiController.UpdateKeyItemsPanel(playerController.hasDash, playerController.hasKey);
             
             if (deactivateAfterCollect) {
                 gameObject.SetActive(false);

@@ -20,7 +20,7 @@ public class ItemDashCollector : MonoBehaviour {
     private CapsuleCollider playerBodyCollider;
     private PlayerController playerController;
     
-    // private bool isCollected;
+    private UIController uiController;
     
     
     
@@ -34,6 +34,8 @@ public class ItemDashCollector : MonoBehaviour {
         playerBodyCollider = playerObject.GetComponent<CapsuleCollider>();
         playerController = playerObject.GetComponent<PlayerController>();
         
+        uiController = GameObject.FindWithTag("UIController").GetComponent<UIController>();
+        
         if (playerController.hasDash && !respawnAfterCollect){
             gameObject.SetActive(false);
         }
@@ -43,6 +45,8 @@ public class ItemDashCollector : MonoBehaviour {
         if (other == playerBodyCollider) {
             
             playerController.hasDash = true;
+            
+            uiController.UpdateKeyItemsPanel(playerController.hasDash, playerController.hasKey);
             
             if (deactivateAfterCollect) {
                 gameObject.SetActive(false);

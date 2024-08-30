@@ -8,22 +8,46 @@ using TMPro;
 public class UIController : MonoBehaviour {
     
     
-    // PUBLIC VARIABLES
+    // SERIALIZED
     
     [Header("# Loading Screen")]
-    public GameObject loadScreenPanel;
-    public Image progressBarImage;
+    
+    [SerializeField]
+    private GameObject loadScreenPanel;
+    [SerializeField]
+    private Image progressBarImage;
+    
     
     [Space(10)]
     [Header("# Debug")]
-    public GameObject debugPanel;
+    
+    [SerializeField]
+    private GameObject debugPanel;
     public TextMeshProUGUI debugTextObject;
     
     
+    [Space(10)]
+    [Header("# Player UI")]
     
-    // PRIVATE VARIABLES
+    [SerializeField]
+    private GameObject healthPip1;
+    [SerializeField]
+    private GameObject healthPip2;
+    
+    [Space(10)]
+    [SerializeField]
+    private GameObject keyItemsPanel;
+    [SerializeField]
+    private GameObject kipKey;
+    [SerializeField]
+    private GameObject kipDash;
+    
+    
+    
+    // NOT SERIALIZED
     
     private Animator loadScreenAnimator;
+    
     
     // Singleton
     private static UIController instance;
@@ -49,6 +73,8 @@ public class UIController : MonoBehaviour {
         loadScreenPanel.SetActive(false);
         loadScreenPanel.GetComponent<Image>().fillAmount = 0f;
         
+        keyItemsPanel.SetActive(false);
+        
         loadScreenAnimator = loadScreenPanel.GetComponent<Animator>();
     }
     
@@ -66,5 +92,26 @@ public class UIController : MonoBehaviour {
     
     public void UpdateProgressBar(float value){
         progressBarImage.fillAmount = value;
+    }
+    
+    public void UpdateHealth(int value){
+        if (value == 2){
+            healthPip1.SetActive(true);
+            healthPip2.SetActive(true);
+        } else if (value == 1){
+            healthPip1.SetActive(true);
+            healthPip2.SetActive(false);
+        } else {
+            healthPip1.SetActive(false);
+            healthPip2.SetActive(false);
+        }
+    }
+    
+    public void UpdateKeyItemsPanel(bool hasDash, bool hasKey){
+        
+        keyItemsPanel.SetActive(hasDash || hasKey);
+        
+        kipKey.SetActive(hasKey);
+        kipDash.SetActive(hasDash);
     }
 }

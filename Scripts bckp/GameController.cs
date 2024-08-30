@@ -79,7 +79,7 @@ public class GameController : MonoBehaviour {
     private Transform playerTransform;
     private PlayerController playerController;
     
-    private UIController uiControllerScript;
+    private UIController uiController;
     private SceneOnLoadData solDataScript;
     
     private string previousSceneName;
@@ -113,7 +113,7 @@ public class GameController : MonoBehaviour {
         playerTransform = playerObject.transform;
         playerController = playerObject.GetComponent<PlayerController>();
         
-        uiControllerScript = GameObject.FindWithTag("UIController").GetComponent<UIController>();
+        uiController = GameObject.FindWithTag("UIController").GetComponent<UIController>();
         solDataScript = FindAnyObjectByType<SceneOnLoadData>();
         
         currentSceneName = SceneManager.GetActiveScene().name;
@@ -135,8 +135,8 @@ public class GameController : MonoBehaviour {
     private IEnumerator LoadingSequence(string sceneName) {
         
         // UI Loading Screen On
-        uiControllerScript.ActivateLoadScreen(true);
-        uiControllerScript.FadeLoadScreen(true);
+        uiController.ActivateLoadScreen(true);
+        uiController.FadeLoadScreen(true);
         yield return new WaitForSeconds(0.5f);
         
         // Load Scene
@@ -145,9 +145,9 @@ public class GameController : MonoBehaviour {
         
         float smoothProgress = 0f;
         do{
-            // uiControllerScript.UpdateProgressBar(loadingAsyncOp.progress);
+            // uiController.UpdateProgressBar(loadingAsyncOp.progress);
             smoothProgress = Mathf.MoveTowards(smoothProgress, loadingAsyncOp.progress, 0.1f);
-            uiControllerScript.UpdateProgressBar(smoothProgress);
+            uiController.UpdateProgressBar(smoothProgress);
             yield return null;
         // } while( !loadingAsyncOp.isDone );
         } while( smoothProgress < 1 );
@@ -159,9 +159,9 @@ public class GameController : MonoBehaviour {
         playerTransform.position = solDataScript.SpawnPositionFromScene(previousSceneName);
         
         // UI Loading Screen Off
-        uiControllerScript.FadeLoadScreen(false);
+        uiController.FadeLoadScreen(false);
         yield return new WaitForSeconds(0.5f);
-        uiControllerScript.ActivateLoadScreen(false);
+        uiController.ActivateLoadScreen(false);
         
         // Make player movable
         playerController.isMovable = true;
