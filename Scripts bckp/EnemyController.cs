@@ -89,6 +89,7 @@ public class EnemyController : MonoBehaviour {
     private CapsuleCollider enemyBodyCollider;
     private Rigidbody enemyRigidbody;
     // private Transform enemyTransform;
+    private LineRenderer aimLineRend;
 
     // private Transform playerTransform;
     private PlayerController playerController;
@@ -136,6 +137,7 @@ public class EnemyController : MonoBehaviour {
         enemyBodyCollider = gameObject.GetComponent<CapsuleCollider>();
         enemyRigidbody = gameObject.GetComponent<Rigidbody>();
         // enemyTransform = gameObject.GetComponent<Transform>();
+        aimLineRend = gameObject.GetComponent<LineRenderer>();
         
         GameObject playerObject = GameObject.FindWithTag("Player");
 //         
@@ -153,6 +155,13 @@ public class EnemyController : MonoBehaviour {
         walkPathsFound = idlePathFind(idlePathSearchQuantity);
         currentTarget = playerBodyCollider.bounds.center;
         startCheck = true;
+        
+        // Aim Line Stuff
+        aimLineRend.SetWidth(0.04f, 0.04f);
+        aimLineRend.SetColors(Color.red, Color.red);
+        aimLineRend.SetPosition(0, enemyBodyCollider.bounds.center);
+        aimLineRend.SetPosition(1, enemyBodyCollider.bounds.center);
+        aimLineRend.enabled = false;
     }
 
     // Update is called once per frame
@@ -669,6 +678,9 @@ public class EnemyController : MonoBehaviour {
         if (agroState == enemyStates.agroReset){
             agroState = enemyStates.agroAiming;
             timeCounter = 0;
+            
+            // Aim line
+            aimLineRend.enabled = true;
         }
             
         // wait to aim/track
@@ -677,7 +689,13 @@ public class EnemyController : MonoBehaviour {
             timeCounter += Time.deltaTime;
             currentTarget = playerBodyCollider.bounds.center;
             
+            // Aim line
+            aimLineRend.SetPosition(0, enemyBodyCollider.bounds.center);
+            aimLineRend.SetPosition(1, playerBodyCollider.bounds.center);
+            
             if (timeCounter > agroAimTime){
+                
+                aimLineRend.enabled = false;
                 
                 // randomly decide if attacks or chases some more
                 if (RandomBool() && !playerController.immune){
@@ -717,7 +735,7 @@ public class EnemyController : MonoBehaviour {
 
         timeCounter += Time.fixedDeltaTime;
         
-        if (timeCounter > 0.95f ) {
+        if (timeCounter > 0.75f ) {
             
             // die
             Destroy(gameObject);
