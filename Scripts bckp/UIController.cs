@@ -48,6 +48,16 @@ public class UIController : MonoBehaviour {
     
     private Animator loadScreenAnimator;
     
+    private PlayerController playerController;
+    
+    private Image healthPip1Image;
+    private Color originalColor1;
+    private Color transparColor1;
+    private Image healthPip2Image;
+    private Color originalColor2;
+    private Color transparColor2;
+    private Coroutine flashCoroutineCheck;
+    
     
     // Singleton
     private static UIController instance;
@@ -74,6 +84,16 @@ public class UIController : MonoBehaviour {
         loadScreenPanel.GetComponent<Image>().fillAmount = 0f;
         
         loadScreenAnimator = loadScreenPanel.GetComponent<Animator>();
+        
+        playerController = GameObject.FindWithTag("Player").GetComponent<PlayerController>();
+        
+        healthPip1Image = healthPip1.GetComponent<Image>();
+        healthPip2Image = healthPip2.GetComponent<Image>();
+        
+        originalColor1 = transparColor1 = healthPip1Image.color;
+        transparColor1.a = 0;
+        originalColor2 = transparColor2 = healthPip2Image.color;
+        transparColor2.a = 0;
     }
     
     public void ActivateLoadScreen(bool active){
@@ -92,17 +112,51 @@ public class UIController : MonoBehaviour {
         progressBarImage.fillAmount = value;
     }
     
-    public void UpdateHealth(int value){
-        if (value == 2){
+    public void UpdateHealth(int health){
+        
+        if (flashCoroutineCheck != null){
+            StopCoroutine(flashCoroutineCheck);
+        }
+
+        flashCoroutineCheck = StartCoroutine(healthPipFlash(health));
+    }
+    
+    private IEnumerator healthPipFlash(int health) {
+        
+        if (health == 2){
+            healthPip1Image.color = originalColor1;
+            healthPip2Image.color = originalColor2;
+            
             healthPip1.SetActive(true);
             healthPip2.SetActive(true);
-        } else if (value == 1){
-            healthPip1.SetActive(true);
-            healthPip2.SetActive(false);
         } else {
-            healthPip1.SetActive(false);
-            healthPip2.SetActive(false);
+            while (playerController.immune) {
+                if (health == 1){
+                    healthPip2Image.color = transparColor2;
+                    yield return new WaitForSeconds(0.1f);
+                    
+                    healthPip2Image.color = originalColor2;
+                    yield return new WaitForSeconds(0.1f);
+                } else {
+                    healthPip1Image.color = transparColor1;
+                    yield return new WaitForSeconds(0.1f);
+                    
+                    healthPip1Image.color = originalColor1;
+                    yield return new WaitForSeconds(0.1f);
+                }
+            }
+            
+            if (health == 1){
+                healthPip1.SetActive(true);
+                healthPip2.SetActive(false);
+            } else {
+                healthPip1.SetActive(false);
+                healthPip2.SetActive(false);
+            }
         }
+        
+        // Set flashCoroutineCheck to null, signaling that it's finished
+        flashCoroutineCheck = null;
     }
     
     public void UpdateKeyItemsPanel(bool hasDash, bool hasKey){

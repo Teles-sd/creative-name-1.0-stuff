@@ -27,7 +27,7 @@ public class PlayerController : MonoBehaviour {
     
     [Space(10)]
     [Header("# Misc")]
-    [Range(2, 7)] public int immunityTime = 4;
+    [Range(2, 7)] public int immunityTime = 3;
     
     
     [Space(10)]
@@ -65,6 +65,7 @@ public class PlayerController : MonoBehaviour {
     private Transform playerTransform;
     private Animator playerAnimator;
     private CapsuleCollider playerBodyCollider;
+    private SpriteRenderer playerSprite;
     
     private UIController uiController;
     private TextMeshProUGUI debugTextObject;
@@ -136,6 +137,7 @@ public class PlayerController : MonoBehaviour {
         playerTransform = GetComponent<Transform>();
         playerAnimator = GetComponent<Animator>();
         playerBodyCollider = GetComponent<CapsuleCollider>();
+        playerSprite = GetComponent<SpriteRenderer>();
         
         isMovable = true;
         // cursorLocked = false;
@@ -214,12 +216,14 @@ public class PlayerController : MonoBehaviour {
         playerRigidbody.velocity = prbVelocity;
     }
     
+    // On Damage
     private void OnCollisionEnter(Collision collision) {
         
         foreach (ContactPoint contact in collision.contacts) {
             
             if ( contact.otherCollider.CompareTag("Enemy") && !immune && !dashSeqnc && !reloadScene ){
                 
+                // Set controll variables
                 immune = true;
                 immunityTimeCounter = 0;
                 applyKnockback = true;
@@ -230,11 +234,14 @@ public class PlayerController : MonoBehaviour {
                     reloadScene = true;
                 }
                 
-                // update UI
-                uiController.UpdateHealth(health);
-
-                knockDirection = contact.normal;
+                // Flash animation
+                StartCoroutine(damageImmuneFlash());
                 
+                // Update UI
+                uiController.UpdateHealth(health);
+                
+                // Set knockback direction
+                knockDirection = contact.normal;
                 // knockDirection *= -1;                       // oppisite direction
                 knockDirection.y = 0;                       // on the XZ plane
                 knockDirection = knockDirection.normalized;
@@ -318,6 +325,23 @@ public class PlayerController : MonoBehaviour {
     private void setPRBxzVelocity(Vector3 vel){
         vel.y = prbVelocity.y;
         prbVelocity = vel;
+    }
+    
+    private IEnumerator damageImmuneFlash() {
+        
+        Color originalColor;    // original color
+        Color transparColor;    // trasparent color
+        
+        originalColor = transparColor = playerSprite.color;
+        transparColor.a = 0;
+        
+        while (immune) {
+            playerSprite.color = transparColor;
+            yield return new WaitForSeconds(0.1f);
+            
+            playerSprite.color = originalColor;
+            yield return new WaitForSeconds(0.1f);
+        }
     }
     
     

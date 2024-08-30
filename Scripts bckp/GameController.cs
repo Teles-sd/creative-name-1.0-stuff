@@ -153,21 +153,7 @@ public class GameController : MonoBehaviour {
         // UI Loading Screen On
         uiController.ActivateLoadScreen(true);
         uiController.FadeLoadScreen(true);
-        yield return new WaitForSeconds(0.5f);
-        
-//         // If isReloadingScene, Unload Scene first.
-//         if (isReloadingScene) {
-//             AsyncOperation unloadingAsyncOp = SceneManager.UnloadSceneAsync(sceneName);
-//         
-//             smoothProgress = 0f;
-//             do{
-//                 smoothProgress = Mathf.MoveTowards(smoothProgress, unloadingAsyncOp.progress, 0.3f);
-//                 uiController.UpdateProgressBar(smoothProgress);
-//                 yield return null;
-//             } while( smoothProgress < 1 );
-//             
-//             uiController.UpdateProgressBar(0);
-//         }
+        yield return new WaitForSeconds(0.5f);  // time it takes to fade in
         
         // Load Scene
         if (!isReloadingScene) {
@@ -181,8 +167,7 @@ public class GameController : MonoBehaviour {
             smoothProgress = Mathf.MoveTowards(smoothProgress, loadingAsyncOp.progress, 0.1f);
             uiController.UpdateProgressBar(smoothProgress);
             yield return null;
-        // } while( !loadingAsyncOp.isDone );
-        } while( smoothProgress < 1 );
+        } while (smoothProgress < 1);
         
         currentSceneName = SceneManager.GetActiveScene().name;
         solDataScript = FindAnyObjectByType<SceneOnLoadData>();
@@ -190,16 +175,16 @@ public class GameController : MonoBehaviour {
         // Set Player location
         playerTransform.position = solDataScript.SpawnPositionFromScene(previousSceneName);
         
-        // If isReloadingScene, restore player health (and key items ?)
+        // If isReloadingScene, restore player health
         if (isReloadingScene) {
             playerController.health = 2;
+            playerController.immune = false;
             uiController.UpdateHealth(2);
-            // uiController.UpdateKeyItemsPanel(playerController.hasDash, playerController.hasKey);
         }
         
         // UI Loading Screen Off
         uiController.FadeLoadScreen(false);
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSeconds(0.5f);  // time it takes to fade out
         uiController.ActivateLoadScreen(false);
         
         // Make player movable
