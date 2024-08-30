@@ -66,7 +66,8 @@ public class UIController : MonoBehaviour {
     
     
     
-    // FUNCTIONS
+    // BUILT-IN EVENT FUNCTIONS
+    
     
     // Called first upon initialisation of an object
     private void Awake() {
@@ -95,6 +96,11 @@ public class UIController : MonoBehaviour {
         originalColor2 = transparColor2 = healthPip2Image.color;
         transparColor2.a = 0;
     }
+    
+    
+    
+    // FUNCTIONS
+    
     
     public void ActivateLoadScreen(bool active){
         loadScreenPanel.SetActive(active);

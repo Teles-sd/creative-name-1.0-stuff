@@ -9,7 +9,7 @@ using UnityEngine.SceneManagement;
 public class GameController : MonoBehaviour {
     
     
-    // PUBLIC VARIABLES
+    // SERIALIZED
     
 //     [Header("# All Scene References")]
 //     
@@ -74,7 +74,7 @@ public class GameController : MonoBehaviour {
     
     
     
-    // PRIVATE VARIABLES
+    // NOT SERIALIZED
     
     private Transform playerTransform;
     private PlayerController playerController;
@@ -97,7 +97,8 @@ public class GameController : MonoBehaviour {
     
     
     
-    // FUNCTIONS
+    // BUILT-IN EVENT FUNCTIONS
+    
     
     // Called first upon initialisation of an object
     private void Awake() {
@@ -126,6 +127,11 @@ public class GameController : MonoBehaviour {
         isChangingLevel = false;
         isReloadingScene = false;
     }
+    
+    
+    
+    // FUNCTIONS
+    
     
     public void ReloadLevel() {
         

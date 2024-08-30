@@ -51,11 +51,6 @@ public class PlayerController : MonoBehaviour {
     // GETTERS
     
     public Vector2 getMouseInput(){ return mouseInput; }
-
-    
-    
-    // RESETTERS
-    
     
     
     
