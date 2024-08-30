@@ -458,6 +458,9 @@ public class PlayerController : MonoBehaviour {
         playerAnimator.SetBool("jumpSeqnc", jumpSeqnc);
         playerAnimator.SetBool("jumpGlide", jumpGlide);
         playerAnimator.SetBool("isFooted", isFooted);
+        
+        // updates animator jumping states
+        playerAnimator.SetBool("dashSeqnc", dashSeqnc);
     }
         
     private void movementCalc() {

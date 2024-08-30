@@ -18,6 +18,10 @@ public class EnemyController : MonoBehaviour {
     [SerializeField]
     private int agroDistance = 10;
     
+    [Space(10)]
+    [SerializeField]
+    private Animator enemyAnimator;
+    
     
     [Space(10)]
     [Header("## Idle")]
@@ -172,6 +176,9 @@ public class EnemyController : MonoBehaviour {
             agroLogic();
         }
         
+        if (enemyAnimator != null){
+            animatorParametersUpdate();
+        }
         
         // DEBUG STUFF
         
@@ -453,6 +460,51 @@ public class EnemyController : MonoBehaviour {
         }
     }
     
+    private void animatorParametersUpdate() {
+        
+        // ANIMATION
+        
+        if (timeToDie) {
+            enemyAnimator.SetBool("die", true);
+        } else if (
+            idleState == enemyStates.idleWalking ||
+            detcState == enemyStates.detcWalking ||
+            agroState == enemyStates.agroDashing
+        ) {
+            enemyAnimator.SetBool("idle", false);
+            enemyAnimator.SetBool("move", true);
+        } else {
+            enemyAnimator.SetBool("idle", true);
+            enemyAnimator.SetBool("move", false);
+        }
+        
+//         if (timeToDie) {
+//             enemyAnimator.SetBool("die", true);
+//         } else {
+//             if (
+//                 idleState == enemyStates.idleReset   ||
+//                 idleState == enemyStates.idleWaiting ||
+//                 idleState == enemyStates.idlePathing ||
+//                 
+//                 detcState == enemyStates.detcReset   ||
+//                 detcState == enemyStates.detcWaiting ||
+//                 
+//                 agroState == enemyStates.agroReset   ||
+//                 agroState == enemyStates.agroAiming  ||
+//             ) {
+//                 enemyAnimator.SetBool("idle", true);
+//                 enemyAnimator.SetBool("move", false);
+//             } else if (
+//                 idleState == enemyStates.idleWalking ||
+//                 detcState == enemyStates.detcWalking ||
+//                 agroState == enemyStates.agroDashing ||
+//             ) {
+//                 enemyAnimator.SetBool("idle", true);
+//                 enemyAnimator.SetBool("move", false);
+//             }
+//         }
+    }
+    
     private enum enemyStates{
         idle,
         idleReset,
@@ -665,7 +717,7 @@ public class EnemyController : MonoBehaviour {
 
         timeCounter += Time.fixedDeltaTime;
         
-        if (timeCounter > 0.5f ) {
+        if (timeCounter > 0.95f ) {
             
             // die
             Destroy(gameObject);
