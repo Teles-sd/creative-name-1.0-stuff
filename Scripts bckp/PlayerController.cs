@@ -69,6 +69,8 @@ public class PlayerController : MonoBehaviour {
     private UIController uiController;
     private TextMeshProUGUI debugTextObject;
     
+    private GameController gameController;
+    
     private Vector3 movementInput = Vector3.zero;
     private Vector2 mouseInput = Vector2.zero;
     
@@ -102,11 +104,13 @@ public class PlayerController : MonoBehaviour {
     private float dashSpeed = 0f;
     private float dashTimer = 0f;
     
-    private int health = 2;     // max: 2
+    [HideInInspector] public int health = 2;     // max: 2
     [HideInInspector] public bool immune = false;
     private float immunityTimeCounter = 0;
     private bool applyKnockback = false;
     private Vector3 knockDirection;
+    
+    [HideInInspector] public bool reloadScene = false;
     
     
     // Singleton
@@ -158,8 +162,8 @@ public class PlayerController : MonoBehaviour {
         
         uiController = GameObject.FindWithTag("UIController").GetComponent<UIController>();
         debugTextObject = uiController.debugTextObject;
-        
-        uiController.UpdateKeyItemsPanel(hasDash, hasKey);
+
+        gameController = GameObject.FindWithTag("GameController").GetComponent<GameController>();
     }
     
     // Update is called once per frame
@@ -167,7 +171,7 @@ public class PlayerController : MonoBehaviour {
         
         updateIsFooted();
         
-        if (isMovable) {
+        if (isMovable && !reloadScene) {
             
             movementInputLogic();
             jumpInputLogic();
@@ -214,13 +218,17 @@ public class PlayerController : MonoBehaviour {
         
         foreach (ContactPoint contact in collision.contacts) {
             
-            if ( contact.otherCollider.CompareTag("Enemy") && !immune && !dashSeqnc ){
+            if ( contact.otherCollider.CompareTag("Enemy") && !immune && !dashSeqnc && !reloadScene ){
                 
                 immune = true;
                 immunityTimeCounter = 0;
                 applyKnockback = true;
                 
                 health -= 1;
+                
+                if (health < 1){
+                    reloadScene = true;
+                }
                 
                 // update UI
                 uiController.UpdateHealth(health);
@@ -514,6 +522,13 @@ public class PlayerController : MonoBehaviour {
         immunityTimeCounter += Time.deltaTime;
         if (immunityTimeCounter > immunityTime) {
             immune = false;
+        }
+        
+        if (immunityTimeCounter > 1.5 && reloadScene){
+        // if (other == playerBodyCollider && !gameController.IsChangingLevel){
+            
+            reloadScene = false;
+            gameController.ReloadLevel();
         }
     }
     

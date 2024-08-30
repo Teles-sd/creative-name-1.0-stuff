@@ -73,8 +73,6 @@ public class UIController : MonoBehaviour {
         loadScreenPanel.SetActive(false);
         loadScreenPanel.GetComponent<Image>().fillAmount = 0f;
         
-        keyItemsPanel.SetActive(false);
-        
         loadScreenAnimator = loadScreenPanel.GetComponent<Animator>();
     }
     

@@ -13,7 +13,7 @@ public class LevelChanger : MonoBehaviour {
     
     // PRIVATE VARIABLES
     
-    private GameController gameControllerScript;
+    private GameController gameController;
     private CapsuleCollider playerBodyCollider;
     
     
@@ -24,13 +24,13 @@ public class LevelChanger : MonoBehaviour {
     private void Start() {
         
         playerBodyCollider = GameObject.FindWithTag("Player").GetComponent<CapsuleCollider>();
-        gameControllerScript = GameObject.FindWithTag("GameController").GetComponent<GameController>();
+        gameController = GameObject.FindWithTag("GameController").GetComponent<GameController>();
         
     }
     
     private void OnTriggerEnter (Collider other) {
-        if (other == playerBodyCollider && !gameControllerScript.IsChangingLevel){
-            gameControllerScript.ChangeLevel(goToSceneName);
+        if (other == playerBodyCollider && !gameController.IsChangingLevel){
+            gameController.ChangeLevel(goToSceneName);
         }
     }
 }

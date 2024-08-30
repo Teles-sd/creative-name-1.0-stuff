@@ -84,7 +84,11 @@ public class GameController : MonoBehaviour {
     
     private string previousSceneName;
     private string currentSceneName;
-    private bool isChangingLevel = false;    
+    
+    private bool isChangingLevel = false;
+    // private float smoothProgress = 0f;
+    private bool isReloadingScene = false;
+    
     
     // Singleton
     private static GameController instance;
@@ -114,10 +118,22 @@ public class GameController : MonoBehaviour {
         playerController = playerObject.GetComponent<PlayerController>();
         
         uiController = GameObject.FindWithTag("UIController").GetComponent<UIController>();
+        uiController.UpdateKeyItemsPanel(playerController.hasDash, playerController.hasKey);
+        
         solDataScript = FindAnyObjectByType<SceneOnLoadData>();
         
         currentSceneName = SceneManager.GetActiveScene().name;
         isChangingLevel = false;
+        isReloadingScene = false;
+    }
+    
+    public void ReloadLevel() {
+        
+        // update isReloadingScene, for differences on LoadingSequence
+        isReloadingScene = true;
+        
+        // honestly? do almost the same as the other way
+        ChangeLevel(SceneManager.GetActiveScene().name);
     }
     
     public void ChangeLevel(string sceneName) {
@@ -139,8 +155,24 @@ public class GameController : MonoBehaviour {
         uiController.FadeLoadScreen(true);
         yield return new WaitForSeconds(0.5f);
         
+//         // If isReloadingScene, Unload Scene first.
+//         if (isReloadingScene) {
+//             AsyncOperation unloadingAsyncOp = SceneManager.UnloadSceneAsync(sceneName);
+//         
+//             smoothProgress = 0f;
+//             do{
+//                 smoothProgress = Mathf.MoveTowards(smoothProgress, unloadingAsyncOp.progress, 0.3f);
+//                 uiController.UpdateProgressBar(smoothProgress);
+//                 yield return null;
+//             } while( smoothProgress < 1 );
+//             
+//             uiController.UpdateProgressBar(0);
+//         }
+        
         // Load Scene
-        previousSceneName = currentSceneName;
+        if (!isReloadingScene) {
+            previousSceneName = currentSceneName;
+        }
         AsyncOperation loadingAsyncOp = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single);
         
         float smoothProgress = 0f;
@@ -158,6 +190,13 @@ public class GameController : MonoBehaviour {
         // Set Player location
         playerTransform.position = solDataScript.SpawnPositionFromScene(previousSceneName);
         
+        // If isReloadingScene, restore player health (and key items ?)
+        if (isReloadingScene) {
+            playerController.health = 2;
+            uiController.UpdateHealth(2);
+            // uiController.UpdateKeyItemsPanel(playerController.hasDash, playerController.hasKey);
+        }
+        
         // UI Loading Screen Off
         uiController.FadeLoadScreen(false);
         yield return new WaitForSeconds(0.5f);
@@ -168,6 +207,12 @@ public class GameController : MonoBehaviour {
         
         // Update isChangingLevel
         isChangingLevel = false;
+        
+        // And isReloadingScene
+        if (isReloadingScene) {
+            isReloadingScene = false;
+            playerController.reloadScene = false;
+        }
     }
     
     public void ExitGame() {

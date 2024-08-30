@@ -52,6 +52,8 @@ public class SceneOnLoadData : MonoBehaviour {
     
     // PRIVATE VARIABLES
     
+    private string defaultFromSceneName;
+    
     // Singleton
     private static SceneOnLoadData instance;
     
@@ -66,6 +68,8 @@ public class SceneOnLoadData : MonoBehaviour {
         } else {
             instance = this;
         }
+        
+        defaultFromSceneName = spawnPoints[0].fromSceneName;
     }
     
     private void OnValidate(){
@@ -77,7 +81,11 @@ public class SceneOnLoadData : MonoBehaviour {
     }
     
     public Vector3 SpawnPositionFromScene(string previousSceneName){
-        return FindSpawnByFromScene(previousSceneName).position;
+        if (previousSceneName == null){
+            return FindSpawnByFromScene(defaultFromSceneName).position;
+        } else {
+            return FindSpawnByFromScene(previousSceneName).position;
+        }
     }
     
     private SpawnPoint FindSpawnByName(string sceneName){
