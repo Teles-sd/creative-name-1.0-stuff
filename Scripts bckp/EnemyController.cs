@@ -71,6 +71,8 @@ public class EnemyController : MonoBehaviour {
         walkPathsFound = idlePathFind(idlePathSearchQuantity);
     }
     private void testprints(){
+        print(Time.deltaTime);
+        print(Time.fixedDeltaTime);
         // print(enemyBodyCollider.center);
         // print(Vector3.down);
         // print(enemyBodyCollider.height);

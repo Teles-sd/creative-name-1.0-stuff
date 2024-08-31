@@ -10,20 +10,28 @@ public class UIController : MonoBehaviour {
     
     // SERIALIZED
     
+    [Header("# Main Menu")]
+    
+    // [SerializeField]
+    public GameObject mainMenuPanel;
+    
+    
+    [Space(10)]
+    [Header("# Pause Menu")]
+    
+    [SerializeField]
+    private GameObject pauseMenuPanel;
+    [SerializeField]
+    private Slider mouseSensitivitySlider;
+    
+    
+    [Space(10)]
     [Header("# Loading Screen")]
     
     [SerializeField]
     private GameObject loadScreenPanel;
     [SerializeField]
     private Image progressBarImage;
-    
-    
-    [Space(10)]
-    [Header("# Debug")]
-    
-    [SerializeField]
-    private GameObject debugPanel;
-    public TextMeshProUGUI debugTextObject;
     
     
     [Space(10)]
@@ -43,12 +51,25 @@ public class UIController : MonoBehaviour {
     private GameObject kipDash;
     
     
+    [Space(10)]
+    [Header("# Debug")]
+    
+    [SerializeField]
+    private GameObject debugPanel;
+    public TextMeshProUGUI debugTextObject;
+    
+    
     
     // NOT SERIALIZED
     
-    private Animator loadScreenAnimator;
+    // [SerializeField]
+    // [ContextMenuItem("Run Start()", "Start")]
+    // [ContextMenuItem("Run onClickStartGame()", "onClickStartGame")]
+    private GameController gameController;
     
     private PlayerController playerController;
+    
+    private Animator loadScreenAnimator;
     
     private Image healthPip1Image;
     private Color originalColor1;
@@ -57,6 +78,8 @@ public class UIController : MonoBehaviour {
     private Color originalColor2;
     private Color transparColor2;
     private Coroutine flashCoroutineCheck;
+    
+    private bool gameHaveStarted = false;
     
     
     // Singleton
@@ -81,12 +104,15 @@ public class UIController : MonoBehaviour {
     
     // Start is called before the first frame update
     private void Start() {
-        loadScreenPanel.SetActive(false);
-        loadScreenPanel.GetComponent<Image>().fillAmount = 0f;
+        
+        gameController = GameObject.FindWithTag("GameController").GetComponent<GameController>();
+
+        playerController = GameObject.FindWithTag("Player").GetComponent<PlayerController>();
         
         loadScreenAnimator = loadScreenPanel.GetComponent<Animator>();
         
-        playerController = GameObject.FindWithTag("Player").GetComponent<PlayerController>();
+        loadScreenPanel.SetActive(false);
+        loadScreenPanel.GetComponent<Image>().fillAmount = 0f;
         
         healthPip1Image = healthPip1.GetComponent<Image>();
         healthPip2Image = healthPip2.GetComponent<Image>();
@@ -95,6 +121,20 @@ public class UIController : MonoBehaviour {
         transparColor1.a = 0;
         originalColor2 = transparColor2 = healthPip2Image.color;
         transparColor2.a = 0;
+    }
+    
+    // Update is called once per frame
+    private void Update() {
+        
+        // if ( Input.GetKeyDown(KeyCode.P) && !gameController.IsChangingLevel && gameHaveStarted){
+        if ( Input.GetKeyDown(KeyCode.Escape) && !gameController.IsChangingLevel && gameHaveStarted){
+
+            if (!pauseMenuPanel.activeSelf){
+                Pause();
+            } else {
+                Unpause();
+            }
+        }
     }
     
     
@@ -171,5 +211,52 @@ public class UIController : MonoBehaviour {
         
         kipKey.SetActive(hasKey);
         kipDash.SetActive(hasDash);
+    }
+    
+    
+    
+    // MENU INTERACTION FUNCTIONS
+    
+    public void onClickStartGame() {
+        if (!gameController){
+            gameController = GameObject.FindWithTag("GameController").GetComponent<GameController>();
+        }
+        
+        gameHaveStarted = true;
+        gameController.ChangeLevel("Hub");
+    }
+    
+    public void onClickExit() {
+        if (!gameController){
+            gameController = GameObject.FindWithTag("GameController").GetComponent<GameController>();
+        }
+        
+        gameController.ExitGame();
+    }
+    
+    private void Pause() {
+        playerController.isMovable = false;
+        Time.timeScale = 0;
+        pauseMenuPanel.SetActive(true);
+        Cursor.lockState = CursorLockMode.None;
+    }
+    
+    private void Unpause() {
+        // Cursor.lockState = CursorLockMode.Locked;
+        pauseMenuPanel.SetActive(false);
+        playerController.isMovable = true;
+        Time.timeScale = 1;
+    }
+    
+    public void onClickContinue() {
+        Unpause();
+    }
+    
+    public void onSliderValueChange() {
+        if (!playerController){
+            playerController = GameObject.FindWithTag("Player").GetComponent<PlayerController>();
+        }
+        
+        playerController.cameraRotationSpeed = mouseSensitivitySlider.value;
     }
 }

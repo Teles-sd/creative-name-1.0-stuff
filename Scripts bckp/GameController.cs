@@ -188,6 +188,11 @@ public class GameController : MonoBehaviour {
             uiController.UpdateHealth(2);
         }
         
+        // if main menu is active, set inactive
+        if (uiController.mainMenuPanel.activeSelf){
+            uiController.mainMenuPanel.SetActive(false);
+        }
+        
         // UI Loading Screen Off
         uiController.FadeLoadScreen(false);
         yield return new WaitForSeconds(0.5f);  // time it takes to fade out

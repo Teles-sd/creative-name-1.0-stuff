@@ -12,7 +12,7 @@ public class PlayerController : MonoBehaviour {
     [Header("# Movement")]
 
     [Range(1, 10)] public int movementSpeed = 5;
-    [Range(3f, 15f)] public float cameraRotationSpeed = 9f;
+    [Range(0.5f, 8f)] public float cameraRotationSpeed = 2.5f;
     
     [Space(10)]
     [Range(3, 13)] public int jumpForce = 7;
@@ -69,8 +69,10 @@ public class PlayerController : MonoBehaviour {
     
     private Vector3 movementInput = Vector3.zero;
     private Vector2 mouseInput = Vector2.zero;
+    private float mouseLagTimeCounter = 0f;
     
-    [HideInInspector] public bool isMovable;
+    public bool isMovable;
+    // [HideInInspector] public bool isMovable;
     private bool cursorLocked;
     
     private Vector3 prbVelocity;
@@ -134,15 +136,7 @@ public class PlayerController : MonoBehaviour {
         playerBodyCollider = GetComponent<CapsuleCollider>();
         playerSprite = GetComponent<SpriteRenderer>();
         
-        isMovable = true;
-        // cursorLocked = false;
-        // cursorLocked = true;
-        // Cursor.lockState = CursorLockMode.Locked;
-        // Cursor.lockState = CursorLockMode.None;
-        if (Cursor.lockState == CursorLockMode.None){
-            cursorLocked = false;
-        }
-                
+        // isMovable = true;
         
         isFooted = false;
         jumpSeqnc = false;
@@ -416,6 +410,12 @@ public class PlayerController : MonoBehaviour {
         
         // MOUSE INPUT (for camera rotation)
         
+        if (Cursor.lockState == CursorLockMode.None){
+            cursorLocked = false;
+        } else {
+            cursorLocked = true;
+        }
+        
         // toggle cursor lock when the "L" key is pressed
         if ( Input.GetKeyDown(KeyCode.L) || (Input.GetKeyDown(KeyCode.Mouse0) && !cursorLocked) ){
             
@@ -428,14 +428,13 @@ public class PlayerController : MonoBehaviour {
             }
         }
         
-        if (cursorLocked){
-            mouseInput.x = Mathf.Clamp( Input.GetAxis("Mouse X"), -3, 3 );
-            mouseInput.y = Mathf.Clamp( Input.GetAxis("Mouse Y"), -3, 3 );
-            // mouseInput.y = limitMouseInput( Input.GetAxis("Mouse Y"), 1 );
-        } else {
-            mouseInput.x = 0f;
-            mouseInput.y = 0f;
-        }
+        // if (cursorLocked){
+        //     mouseInput.x = Mathf.Clamp( Input.GetAxis("Mouse X"), -3, 3 );
+        //     mouseInput.y = Mathf.Clamp( Input.GetAxis("Mouse Y"), -3, 3 );
+        // } else {
+        //     mouseInput.x = 0f;
+        //     mouseInput.y = 0f;
+        // }
     }
     
     private void animatorParametersUpdate() {
@@ -533,6 +532,35 @@ public class PlayerController : MonoBehaviour {
     private void cameraCalc() {
         
         // CAMERA ROTATION
+        
+        if (cursorLocked){
+            mouseInput.x = Mathf.Clamp( Input.GetAxis("Mouse X"), -3, 3 );
+            mouseInput.y = Mathf.Clamp( Input.GetAxis("Mouse Y"), -3, 3 );
+        } else {
+            mouseInput.x = 0f;
+            mouseInput.y = 0f;
+        }
+        
+        // if (cursorLocked){
+        //     if (
+        //         !Mathf.Approximately(Input.GetAxis("Mouse X"),0) ||
+        //         !Mathf.Approximately(Input.GetAxis("Mouse Y"),0)
+        //     ) {
+        //         mouseLagTimeCounter = 0f;
+        //         mouseInput.x = Mathf.Clamp( Input.GetAxis("Mouse X"), -3, 3 );
+        //         mouseInput.y = Mathf.Clamp( Input.GetAxis("Mouse Y"), -3, 3 );
+        //     }else{
+        //         mouseLagTimeCounter += Time.fixedDeltaTime;
+        //     }
+        //     if (mouseLagTimeCounter > 0.1){
+        //         mouseLagTimeCounter = 0f;
+        //         mouseInput.x = 0f;
+        //         mouseInput.y = 0f;
+        //     }
+        // } else {
+        //     mouseInput.x = 0f;
+        //     mouseInput.y = 0f;
+        // }
         
         playerTransform.Rotate(
             axis: Vector3.up,
